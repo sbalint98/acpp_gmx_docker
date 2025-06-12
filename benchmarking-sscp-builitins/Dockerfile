@@ -6,26 +6,40 @@ RUN apt -y install cmake git gnupg lsb-release software-properties-common vim wg
 
 #Install boost dependcies  
 RUN apt-get -y install libboost-context-dev libboost-fiber-dev libboost-filesystem-dev libboost-test-dev 
-
 RUN apt -y install libfftw3-dev
 
-ARG LLVM_VERSION=19
-#Add LLVM 15 repo  
-RUN wget https://apt.llvm.org/llvm.sh  
-RUN bash ./llvm.sh $LLVM_VERSION  
+ARG LLVM_SSCP_VERSION=17
+#rocm 6.4.1 reports 19.0.0git but it fails to compile with 18 so we need 19
+ARG LLVM_SMCP_VERSION=19
 
-#Install libclang  
-RUN apt-get -y install libclang-$LLVM_VERSION-dev libclang-$LLVM_VERSION-dev clang-tools-$LLVM_VERSION libomp-$LLVM_VERSION-dev  
+RUN wget https://apt.llvm.org/llvm.sh  
+RUN bash ./llvm.sh $LLVM_SSCP_VERSION  
+RUN apt-get -y install libclang-$LLVM_SSCP_VERSION-dev libclang-$LLVM_SSCP_VERSION-dev clang-tools-$LLVM_SSCP_VERSION 
+
+RUN bash ./llvm.sh $LLVM_SMCP_VERSION  
+# SMCP compiler is later than SSCP therfore  we use their omp
+RUN apt-get -y install libclang-$LLVM_SMCP_VERSION-dev libclang-$LLVM_SMCP_VERSION-dev clang-tools-$LLVM_SMCP_VERSION libomp-$LLVM_SMCP_VERSION-dev  
+
+# Link back the SMCP LLVM OpenMP for the SSCP OpenMP
+
+RUN ln -s /usr/lib/llvm-$LLVM_SMCP_VERSION/lib/clang/$LLVM_SMCP_VERSION/include/omp-tools.h /usr/lib/llvm-$LLVM_SSCP_VERSION/lib/clang/$LLVM_SSCP_VERSION/include/omp-tools.h
+RUN ln -s /usr/lib/llvm-$LLVM_SMCP_VERSION/lib/clang/$LLVM_SMCP_VERSION/include/omp.h      /usr/lib/llvm-$LLVM_SSCP_VERSION/lib/clang/$LLVM_SSCP_VERSION/include/omp.h
+RUN ln -s /usr/lib/llvm-$LLVM_SMCP_VERSION/lib/clang/$LLVM_SMCP_VERSION/include/ompt-multiplex.hlex.h /usr/lib/llvm-$LLVM_SSCP_VERSION/lib/clang/$LLVM_SSCP_VERSION/include/ompt-multiplex.hlex.h
+RUN ln -s /usr/lib/llvm-$LLVM_SMCP_VERSION/lib/clang/$LLVM_SMCP_VERSION/include/ompt.h     /usr/lib/llvm-$LLVM_SSCP_VERSION/lib/clang/$LLVM_SSCP_VERSION/include/ompt.h
+RUN ln -s /usr/lib/llvm-$LLVM_SMCP_VERSION/lib/clang/$LLVM_SMCP_VERSION/include/ompx.h     /usr/lib/llvm-$LLVM_SSCP_VERSION/lib/clang/$LLVM_SSCP_VERSION/include/ompx.h
+
+RUN ln -s /usr/lib/llvm-$LLVM_SMCP_VERSION/lib/libomptarget.so /usr/lib/llvm-$LLVM_SSCP_VERSION/lib/libomptarget.so
+RUN ln -s /usr/lib/llvm-$LLVM_SMCP_VERSION/lib/libgomp.so     /usr/lib/llvm-$LLVM_SSCP_VERSION/lib/libgomp.so
+RUN ln -s /usr/lib/llvm-$LLVM_SMCP_VERSION/lib/libiomp5.so    /usr/lib/llvm-$LLVM_SSCP_VERSION/lib/libiomp5.so
+RUN ln -s /usr/lib/llvm-$LLVM_SMCP_VERSION/lib/libomp.so      /usr/lib/llvm-$LLVM_SSCP_VERSION/lib/libomp.so
+
 
 RUN apt -y install ssh openssh-server 
-
-
 RUN apt -y install nginx
-COPY --chmod=755 start.sh /
-COPY --chmod=755 post_start.sh /
-COPY --chmod=755 init-water-benchmark.sh /
 
-ADD git@github.com:sbalint98/AdaptiveCpp.git#bsoproni-all-gmx-builtins-benchmark ./AdaptiveCpp
+ARG ACPP_VERSION=github.com:sbalint98/AdaptiveCpp.git#bsoproni-all-gmx-builtins-benchmark 
+
+ADD git@$ACPP_VERSION ./AdaptiveCpp
 
 # GMX variants
 ADD git@gitlab.com:sbalint98/gromacs.git#benchmark-base ./gromacs-smcp
@@ -36,40 +50,49 @@ ADD git@gitlab.com:sbalint98/gromacs.git#enable-sscp-builtins-benchmark ./gromac
 ADD git@github.com:ROCm/Gromacs#4947-hip-feature-enablement-2025.2 ./gromacs-hip
 
 
-RUN cmake -GNinja -S ./AdaptiveCpp/ -B ./AdaptiveCpp/build/ 
-RUN ninja -C ./AdaptiveCpp/build 
-RUN cmake --install ./AdaptiveCpp/build/ 
+RUN cmake -GNinja -S ./AdaptiveCpp/ -B ./AdaptiveCpp/build-smcp/ \
+                   -DLLVM_DIR=/usr/lib/llvm-$LLVM_SMCP_VERSION/lib/cmake/llvm/
+RUN ninja -C ./AdaptiveCpp/build-smcp 
+RUN cmake --install ./AdaptiveCpp/build-smcp/ --prefix=/AdaptiveCpp/build-smcp/install 
 
-ARG GENERAL_CMAKE_OPTIONS=" -DCMAKE_BUILD_TYPE=Release "
+RUN cmake -GNinja -S ./AdaptiveCpp/ -B ./AdaptiveCpp/build-sscp/ \
+                   -DLLVM_DIR=/usr/lib/llvm-$LLVM_SSCP_VERSION/lib/cmake/llvm/
+RUN ninja -C ./AdaptiveCpp/build-sscp 
+RUN cmake --install ./AdaptiveCpp/build-sscp/ --prefix=/AdaptiveCpp/build-sscp/install 
 
-ARG ACPP_CMAKE_OPTIONS=" $GENERAL_CMAKE_OPTIONS -DCMAKE_C_COMPILER=clang-$LLVM_VERSION \
-                         -DCMAKE_CXX_COMPILER=clang++-$LLVM_VERSION \
-			 -DCMAKE_BUILD_TYPE=Release "
+ARG GENERAL_CMAKE_OPTIONS=" -D CMAKE_BUILD_TYPE=Release \
+		                        -D GMX_USE_ROCTX=ON \
+                            -D BUILD_TESTING=ON \ 
+                            -D REGRESSIONTEST_DOWNLOAD=ON "
+
+# We can compile GMX with whatever compiler it shouldn't matter
+ARG ACPP_CMAKE_OPTIONS=" $GENERAL_CMAKE_OPTIONS \ 
+                         -D GMX_GPU_FFT_LIBRARY=none \
+                         -D GMX_GPU=SYCL \
+                         -D GMX_SYCL=ACPP "
 
 
 RUN apt -y install  roctracer-dev rocprofiler-dev roctracer-dev
 ENV ROCM_PATH=/opt/rocm/
 
-RUN cmake -GNinja -S ./gromacs-sscp-base -B ./gromacs-sscp-base/build $ACPP_CMAKE_OPTIONS \
-                  -D GMX_GPU=SYCL \
-                  -D GMX_SYCL=ACPP \
-                  -D ACPP_TARGETS=generic \
-                  -D GMX_GPU_FFT_LIBRARY=none \
-		  -D GMX_USE_ROCTX=ON
+RUN cmake  -GNinja -S ./gromacs-sscp-base -B ./gromacs-sscp-base/build $ACPP_CMAKE_OPTIONS \
+                  -D CMAKE_C_COMPILER=clang-$LLVM_SSCP_VERSION \
+                  -D CMAKE_CXX_COMPILER=clang++-$LLVM_SSCP_VERSION  \
+                  -D CMAKE_PREFIX_PATH=/AdaptiveCpp/build-sscp/install/lib/cmake/AdaptiveCpp \
+                  -D ACPP_TARGETS=generic 
 
 RUN cmake -GNinja -S ./gromacs-sscp-builtins -B ./gromacs-sscp-builtins/build $ACPP_CMAKE_OPTIONS \
-                  -D GMX_GPU=SYCL \
-                  -D GMX_SYCL=ACPP \
-                  -D ACPP_TARGETS=generic \
-                  -D GMX_GPU_FFT_LIBRARY=none \
-		  -D GMX_USE_ROCTX=ON
+                  -D CMAKE_C_COMPILER=clang-$LLVM_SSCP_VERSION \
+                  -D CMAKE_CXX_COMPILER=clang++-$LLVM_SSCP_VERSION  \
+                  -D CMAKE_PREFIX_PATH=/AdaptiveCpp/build-sscp/install/lib/cmake/AdaptiveCpp \
+                  -D ACPP_TARGETS=generic 
                 
+
 RUN cmake -GNinja -S ./gromacs-smcp -B ./gromacs-smcp/build $ACPP_CMAKE_OPTIONS \
-                  -D GMX_GPU=SYCL \
-                  -D GMX_SYCL=ACPP \
-                  -D ACPP_TARGETS="hip:gfx906,gfx908,gfx90a,gfx940" \
-                  -D GMX_GPU_FFT_LIBRARY=none \
-		  -D GMX_USE_ROCTX=ON
+                  -D CMAKE_C_COMPILER=clang-$LLVM_SMCP_VERSION \
+                  -D CMAKE_CXX_COMPILER=clang++-$LLVM_SMCP_VERSION  \
+                  -D CMAKE_PREFIX_PATH=/AdaptiveCpp/build-smcp/install/lib/cmake/AdaptiveCpp \
+                  -D ACPP_TARGETS="hip:gfx906,gfx908,gfx90a,gfx940" 
 
 
 RUN apt -y install rocprim-dev libamdhip64-dev librocprim-dev
@@ -77,24 +100,39 @@ RUN cmake -GNinja -S ./gromacs-hip -B ./gromacs-hip/build $GENERAL_CMAKE_OPTIONS
                   -D CMAKE_C_COMPILER=hipcc \
                   -D CMAKE_CXX_COMPILER=hipcc \
                   -D GMX_GPU=HIP \
-                  -D GMX_HIP_TARGET_ARCH="gfx906,gfx908,gfx90a,gfx940" \
-		  -D GMX_USE_ROCTX=ON
-##
-#						  -DCMAKE_C_COMPILER=clang-$LLVM_VERSION \
-#                                                  -DCMAKE_CXX_COMPILER=clang++-$LLVM_VERSION \
-#                                                  -DGMX_GPU=SYCL \
-#						  -DGMX_SYCL_HIPSYCL=ON \
-#						  -DGMX_ACPP_HAVE_GENERIC_TARGET=ON \
-#                                                  -DGMX_GPU_FFT_LIBRARY=none \
-#                                                  -DHIPSYCL_TARGETS=generic \
-#					          -DBUILD_TESTING=ON \	
-#                                                  -DREGRESSIONTEST_DOWNLOAD=ON 
+                  -D GMX_HIP_TARGET_ARCH="gfx906,gfx908,gfx90a,gfx940" 
 
-#RUN ninja -C ./gromacs/build
-#RUN ninja -C ./gromacs/build tests
+RUN ninja -C ./gromacs-sscp-base/build tests
+RUN ninja -C ./gromacs-sscp-builtins/build tests
+RUN ninja -C ./gromacs-smcp/build tests
+RUN ninja -C ./gromacs-hip/build tests
+
+RUN ninja -C ./gromacs-sscp-base/build gmx
+RUN ninja -C ./gromacs-sscp-builtins/build gmx
+RUN ninja -C ./gromacs-smcp/build gmx
+RUN ninja -C ./gromacs-hip/build gmx
+COPY --chmod=755 init-water-benchmark.sh /
+RUN bash init-water-benchmark.sh
+COPY --chmod=755 start.sh /
+COPY --chmod=755 post_start.sh /
+COPY --chmod=755 run_benchmarks.sh /
+
+###
+##						  -DCMAKE_C_COMPILER=clang-$LLVM_VERSION \
+##                                                  -DCMAKE_CXX_COMPILER=clang++-$LLVM_VERSION \
+##                                                  -DGMX_GPU=SYCL \
+##						  -DGMX_SYCL_HIPSYCL=ON \
+##						  -DGMX_ACPP_HAVE_GENERIC_TARGET=ON \
+##                                                  -DGMX_GPU_FFT_LIBRARY=none \
+##                                                  -DHIPSYCL_TARGETS=generic \
+##					          -DBUILD_TESTING=ON \	
+##                                                  -DREGRESSIONTEST_DOWNLOAD=ON 
 #
-#RUN cmake --install ./gromacs/build
-#RUN bash init-water-benchmark.sh
-
-
-#CMD ["/start.sh"]
+##RUN ninja -C ./gromacs/build
+##RUN ninja -C ./gromacs/build tests
+##
+##RUN cmake --install ./gromacs/build
+##RUN bash init-water-benchmark.sh
+#
+#
+##CMD ["/start.sh"]
