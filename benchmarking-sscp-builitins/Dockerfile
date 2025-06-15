@@ -92,7 +92,7 @@ RUN cmake -GNinja -S ./gromacs-smcp -B ./gromacs-smcp/build $ACPP_CMAKE_OPTIONS 
                   -D CMAKE_C_COMPILER=clang-$LLVM_SMCP_VERSION \
                   -D CMAKE_CXX_COMPILER=clang++-$LLVM_SMCP_VERSION  \
                   -D CMAKE_PREFIX_PATH=/AdaptiveCpp/build-smcp/install/lib/cmake/AdaptiveCpp \
-                  -D ACPP_TARGETS="hip:gfx906,gfx908,gfx90a,gfx940" 
+                  -D ACPP_TARGETS="hip:gfx906,gfx908,gfx90a,gfx940,gfx942" 
 
 
 RUN apt -y install rocprim-dev libamdhip64-dev librocprim-dev
@@ -100,7 +100,7 @@ RUN cmake -GNinja -S ./gromacs-hip -B ./gromacs-hip/build $GENERAL_CMAKE_OPTIONS
                   -D CMAKE_C_COMPILER=hipcc \
                   -D CMAKE_CXX_COMPILER=hipcc \
                   -D GMX_GPU=HIP \
-                  -D GMX_HIP_TARGET_ARCH="gfx906,gfx908,gfx90a,gfx940" 
+                  -D GMX_HIP_TARGET_ARCH="gfx906,gfx908,gfx90a,gfx940,gfx942" 
 
 RUN ninja -C ./gromacs-sscp-base/build tests
 RUN ninja -C ./gromacs-sscp-builtins/build tests
