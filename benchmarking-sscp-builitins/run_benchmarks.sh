@@ -73,14 +73,13 @@ do
     
     
         echo $benchmark_out_path
-        for water_box in  0001.5  0003  0006  0012  0024  0048 0096  0192  0384  0768  1536  3072 6144
+        for water_box in  0001.5  0003  0006  0012  0024  0048 0096  0192  0384  0768  1536  3072 #6144
             do
             benchmark_out_path_water=$benchmark_out_path/$water_box
             benchmark_out_path_water_host=$benchmark_out_path_water
             has_converged=false
             num_runs=1
 
-            if [ "$USE_PROFILING" = false ]; then
             while [ "$has_converged" != true ]
             do
               echo "[run-benchmark.sh] Running..."
@@ -93,8 +92,12 @@ do
               export LD_LIBRARY_PATH=/opt/rocm/lib/:$LD_LIBRARY_PATH
               cd $benchmark_out_path_water
               outfile=$benchmark_out_path_water_host/out_$i.out
-              $build_dir/bin/gmx mdrun -noconfout -nb gpu -bonded gpu  -update cpu  -pme gpu -pmefft cpu -nt 32  -nsteps -1 -maxh 0.009 -s $gmx_water_benchmark_root_dir/$water_box/water.tpr &> $outfile
-              #echo $outfile	      
+              if [ "$USE_PROFILING" = false ]; then
+                $build_dir/bin/gmx mdrun -noconfout -nb gpu -bonded gpu  -update gpu  -pme gpu -pmefft cpu -nt 32  -nsteps -1 -maxh 0.009 -s $gmx_water_benchmark_root_dir/$water_box/water.tpr &> $outfile
+              else
+                $build_dir/bin/gmx mdrun -noconfout -nb gpu -bonded gpu  -update gpu  -pme gpu -pmefft cpu -nt 32  -nsteps 400  -s $gmx_water_benchmark_root_dir/$water_box/water.tpr &> $outfile
+              fi
+              #echo $outfile          
               set +e
               grep "kernel_cache" $outfile > /dev/null
               if [ $? = 0 ] ; then
@@ -105,6 +108,8 @@ do
                 echo "JIT-Optimization complete."
                 has_converged=true
                 echo "#final-num-runs $num_runs" >> $outfile
+            if [ "$USE_PROFILING" = false ]; then
+                echo "e2e run"
                     set -e
                     mkdir -p $benchmark_out_path
                     mkdir -p $benchmark_out_path_water
@@ -115,13 +120,11 @@ do
                     export ROCR_VISIBLE_DEVICES=$ROCR_VISIBLE_DEVICES
                     export PATH=/opt/rocm/bin/:$PATH
                     cd $benchmark_out_path_water
-                    $build_dir/bin/gmx mdrun -noconfout -nb gpu -bonded gpu  -update cpu  -pme gpu -pmefft cpu -nt 32  -nsteps -1 -maxh 0.009  -s $gmx_water_benchmark_root_dir/$water_box/water.tpr &> $outfile
-		    grep Performance $outfile
-		    echo iter: $i build: $gromacs_build box: $water_box
-		    grep "kernel cache" $outfile  && echo "***** JIT DETECTED *****"  || echo "No Optimization"
-              fi
+                    $build_dir/bin/gmx mdrun -noconfout -nb gpu -bonded gpu  -update gpu  -pme gpu -pmefft cpu -nt 32  -nsteps -1 -maxh 0.009  -s $gmx_water_benchmark_root_dir/$water_box/water.tpr &> $outfile
+                    grep Performance $outfile
+                    echo iter: $i build: $gromacs_build box: $water_box
+                    grep "kernel cache" $outfile  && echo "***** JIT DETECTED *****"  || echo "No Optimization"
               num_runs=$((num_runs+1))
-            done
                 else
                     echo "Profiling run"
                     set -e
@@ -136,8 +139,10 @@ do
                     #export ROCR_VISIBLE_DEVICES=$ROCR_VISIBLE_DEVICES
                     export PATH=/opt/rocm/bin/:$PATH
                     cd $benchmark_out_path_water
-                    /opt/rocm/bin/rocprofv2 --kernel-trace --plugin file -o kernel_trace $build_dir/bin/gmx mdrun -noconfout -nb gpu -bonded gpu  -update cpu  -pme gpu -pmefft cpu -nt 32  -nsteps 400  -s $gmx_water_benchmark_root_dir/$water_box/water.tpr 2>&1 &>  out_$i.out
+                    /opt/rocm/bin/rocprofv2 --kernel-trace --plugin file -o kernel_trace $build_dir/bin/gmx mdrun -noconfout -nb gpu -bonded gpu  -update gpu  -pme gpu -pmefft cpu -nt 32  -nsteps 400  -s $gmx_water_benchmark_root_dir/$water_box/water.tpr 2>&1 &>  out_$i.out
                 fi
+              fi
+            done
         echo $water_box
         done
     done 

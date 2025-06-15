@@ -63,9 +63,9 @@ RUN cmake --install ./AdaptiveCpp/build-sscp/ --prefix=/AdaptiveCpp/build-sscp/i
 ARG GENERAL_CMAKE_OPTIONS=" -D CMAKE_BUILD_TYPE=Release \
 		                        -D GMX_USE_ROCTX=ON \
                             -D BUILD_TESTING=ON \ 
+                            -D GMX_SIMD=AVX2_128 \
                             -D REGRESSIONTEST_DOWNLOAD=ON "
 
-# We can compile GMX with whatever compiler it shouldn't matter
 ARG ACPP_CMAKE_OPTIONS=" $GENERAL_CMAKE_OPTIONS \ 
                          -D GMX_GPU_FFT_LIBRARY=none \
                          -D GMX_GPU=SYCL \
@@ -117,6 +117,7 @@ COPY --chmod=755 start.sh /
 COPY --chmod=755 post_start.sh /
 COPY --chmod=755 run_benchmarks.sh /
 
+RUN apt -y install gdb debuginfod hip-runtime-amd-dbgsym
 ###
 ##						  -DCMAKE_C_COMPILER=clang-$LLVM_VERSION \
 ##                                                  -DCMAKE_CXX_COMPILER=clang++-$LLVM_VERSION \
