@@ -11,7 +11,6 @@ ADD git@github.com:ROCm/Gromacs#4947-hip-feature-enablement-2025.2 ./gromacs-hip
 
 
 ARG GENERAL_CMAKE_OPTIONS=" -D CMAKE_BUILD_TYPE=Release \
-		                        -D GMX_USE_ROCTX=ON \
                             -D BUILD_TESTING=ON \ 
                             -D GMX_SIMD=AVX2_128 \
                             -D REGRESSIONTEST_DOWNLOAD=ON "
@@ -20,7 +19,7 @@ RUN cmake -GNinja -S ./gromacs-hip -B ./gromacs-hip/build $GENERAL_CMAKE_OPTIONS
                   -D CMAKE_C_COMPILER=hipcc \
                   -D CMAKE_CXX_COMPILER=hipcc \
                   -D GMX_GPU=HIP \
-                  -D GMX_HIP_TARGET_ARCH="gfx906,gfx908,gfx90a,gfx940,gfx942" 
+                  -D GMX_HIP_TARGET_ARCH="gfx90a" 
 
 RUN ninja -C ./gromacs-hip/build tests
 RUN ninja -C ./gromacs-hip/build gmx
