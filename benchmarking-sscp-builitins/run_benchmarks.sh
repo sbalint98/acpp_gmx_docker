@@ -18,7 +18,7 @@ done
 
 gmx_root_dir=`pwd`
 gmx_water_benchmark_root_dir=`pwd`/grappa-1.5k-6.1M_rc0.9
-benchmark_out_root=`pwd`/benchmark_results/sscp-builtins-wip/
+benchmark_out_root=`pwd`/benchmark_results/sscp-profile-multiflavor/
 
 export ACPP_PERSISTENT_RUNTIME=1 
 export ACPP_DEBUG_LEVEL=2
@@ -35,9 +35,9 @@ rm -rf ~/.acpp/
 
 for i in $(seq 1 $iteration_num)
 do
-    for gromacs_build in sscp-base-al1 sscp-base-al2 sscp-builtins-al1 sscp-builtins-al2 smcp  
+    for gromacs_build in sscp-builtins-al1 sscp-builtins-al2 smcp 
     do
-      for flavor in fsw psh psw rf
+      for flavor in rf fsw  psh  psw 
       do
         case $gromacs_build in 
              sscp-base-al1)
@@ -75,6 +75,10 @@ do
     
     
         echo $benchmark_out_path
+        pme=gpu
+        if [ "$flavor" == "rf" ]; then
+                pme=auto
+        fi
         for water_box in  0001.5  0003  0006  0012  0024  0048 0096  0192  0384  0768  1536  3072 #6144
             do
             benchmark_out_path_water=$benchmark_out_path/$water_box/$flavor
@@ -95,9 +99,9 @@ do
               cd $benchmark_out_path_water
               outfile=$benchmark_out_path_water_host/out_$i.out
               if [ "$USE_PROFILING" = false ]; then
-                $build_dir/bin/gmx mdrun -noconfout -nb gpu -bonded gpu  -update gpu  -pme gpu -pmefft cpu -nt 32  -nsteps -1 -maxh 0.009 -s $gmx_water_benchmark_root_dir/$water_box/$flavor/water.tpr &> $outfile
+                $build_dir/bin/gmx mdrun -noconfout -nb gpu -bonded gpu  -update gpu  -pme $pme -pmefft cpu -nt 32  -nsteps -1 -maxh 0.009 -s $gmx_water_benchmark_root_dir/$water_box/$flavor/water.tpr &> $outfile
               else
-                $build_dir/bin/gmx mdrun -noconfout -nb gpu -bonded gpu  -update gpu  -pme gpu -pmefft cpu -nt 32  -nsteps 400  -s $gmx_water_benchmark_root_dir/$water_box/$flavor/water.tpr &> $outfile
+                $build_dir/bin/gmx mdrun -noconfout -nb gpu -bonded gpu  -update gpu  -pme $pme -pmefft cpu -nt 32  -nsteps 400  -s $gmx_water_benchmark_root_dir/$water_box/$flavor/water.tpr &> $outfile
               fi
               #echo $outfile          
               set +e
@@ -122,7 +126,7 @@ do
                     export ROCR_VISIBLE_DEVICES=$ROCR_VISIBLE_DEVICES
                     export PATH=/opt/rocm/bin/:$PATH
                     cd $benchmark_out_path_water
-                    $build_dir/bin/gmx mdrun -noconfout -nb gpu -bonded gpu  -update gpu  -pme gpu -pmefft cpu -nt 32  -nsteps -1 -maxh 0.009  -s $gmx_water_benchmark_root_dir/$water_box/$flavor/water.tpr &> $outfile
+                    $build_dir/bin/gmx mdrun -noconfout -nb gpu -bonded gpu  -update gpu  -pme $pme -pmefft cpu -nt 32  -nsteps -1 -maxh 0.009  -s $gmx_water_benchmark_root_dir/$water_box/$flavor/water.tpr &> $outfile
                     grep Performance $outfile
                     echo iter: $i build: $gromacs_build box: $water_box
                     grep "kernel cache" $outfile  && echo "***** JIT DETECTED *****"  || echo "No Optimization"
@@ -141,7 +145,7 @@ do
                     #export ROCR_VISIBLE_DEVICES=$ROCR_VISIBLE_DEVICES
                     export PATH=/opt/rocm/bin/:$PATH
                     cd $benchmark_out_path_water
-                    /opt/rocm/bin/rocprofv2 --kernel-trace --plugin file -o kernel_trace $build_dir/bin/gmx mdrun -noconfout -nb gpu -bonded gpu  -update gpu  -pme gpu -pmefft cpu -nt 32  -nsteps 400  -s $gmx_water_benchmark_root_dir/$water_box/$flavor/water.tpr 2>&1 &>  out_$i.out
+                    /opt/rocm/bin/rocprofv2 --kernel-trace --plugin file -o kernel_trace $build_dir/bin/gmx mdrun -noconfout -nb gpu -bonded gpu  -update gpu  -pme $pme -pmefft cpu -nt 32  -nsteps 400  -s $gmx_water_benchmark_root_dir/$water_box/$flavor/water.tpr 2>&1 &>  out_$i.out
                 fi
               fi
             done
@@ -151,5 +155,4 @@ do
       done
     done 
 done
-
 
