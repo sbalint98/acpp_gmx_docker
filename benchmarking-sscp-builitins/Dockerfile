@@ -95,22 +95,36 @@ RUN cmake -GNinja -S ./gromacs-smcp -B ./gromacs-smcp/build $ACPP_CMAKE_OPTIONS 
                   -D ACPP_TARGETS="hip:gfx906,gfx908,gfx90a,gfx940,gfx942" 
 
 
-RUN apt -y install rocprim-dev libamdhip64-dev librocprim-dev
+RUN apt -y install  libamdhip64-dev rocm-cmake
+
+#Install rocprim
+ADD git@github.com:ROCm/rocPRIM#rocm-6.4.1 ./rocprim 
+RUN cmake -G Ninja -S ./rocprim -B ./rocprim/build \
+                  -D CMAKE_C_COMPILER=hipcc \
+                  -D CMAKE_CXX_COMPILER=hipcc 
+RUN ninja -C ./rocprim/build
+RUN cmake --install ./rocprim/build --prefix ./rocprim/build/install
+
+ADD git@gitlab.com:sbalint98/gromacs.git#enable-sscp-builtins-benchmark ./gromacs-sscp-builtins
+
 RUN cmake -GNinja -S ./gromacs-hip -B ./gromacs-hip/build $GENERAL_CMAKE_OPTIONS \
                   -D CMAKE_C_COMPILER=hipcc \
                   -D CMAKE_CXX_COMPILER=hipcc \
+                  -D CMAKE_CXX_FLAGS="-I /rocprim/build/install/include/" \
                   -D GMX_GPU=HIP \
-                  -D GMX_HIP_TARGET_ARCH="gfx906,gfx908,gfx90a,gfx940,gfx942" 
+                  -D GMX_HIP_TARGET_ARCH="gfx906,gfx908,gfx90a,gfx940,gfx942" \
+                  -D CMAKE_PREFIX_PATH=/rocprim/build/install/
 
 RUN ninja -C ./gromacs-sscp-base/build tests
 RUN ninja -C ./gromacs-sscp-builtins/build tests
 RUN ninja -C ./gromacs-smcp/build tests
-RUN ninja -C ./gromacs-hip/build tests
+#RUN ninja -C ./gromacs-hip/build tests
 
 RUN ninja -C ./gromacs-sscp-base/build gmx
 RUN ninja -C ./gromacs-sscp-builtins/build gmx
 RUN ninja -C ./gromacs-smcp/build gmx
-RUN ninja -C ./gromacs-hip/build gmx
+#RUN ninja -C ./gromacs-hip/build gmx
+COPY kernel-flavor-test-mdps.tar.gz /
 COPY --chmod=755 init-water-benchmark.sh /
 RUN bash init-water-benchmark.sh
 COPY --chmod=755 start.sh /
@@ -118,22 +132,3 @@ COPY --chmod=755 post_start.sh /
 COPY --chmod=755 run_benchmarks.sh /
 
 RUN apt -y install gdb debuginfod hip-runtime-amd-dbgsym
-###
-##						  -DCMAKE_C_COMPILER=clang-$LLVM_VERSION \
-##                                                  -DCMAKE_CXX_COMPILER=clang++-$LLVM_VERSION \
-##                                                  -DGMX_GPU=SYCL \
-##						  -DGMX_SYCL_HIPSYCL=ON \
-##						  -DGMX_ACPP_HAVE_GENERIC_TARGET=ON \
-##                                                  -DGMX_GPU_FFT_LIBRARY=none \
-##                                                  -DHIPSYCL_TARGETS=generic \
-##					          -DBUILD_TESTING=ON \	
-##                                                  -DREGRESSIONTEST_DOWNLOAD=ON 
-#
-##RUN ninja -C ./gromacs/build
-##RUN ninja -C ./gromacs/build tests
-##
-##RUN cmake --install ./gromacs/build
-##RUN bash init-water-benchmark.sh
-#
-#
-##CMD ["/start.sh"]
