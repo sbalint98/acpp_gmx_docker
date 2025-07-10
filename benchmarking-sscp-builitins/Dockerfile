@@ -124,11 +124,11 @@ RUN ninja -C ./gromacs-sscp-base/build gmx
 RUN ninja -C ./gromacs-sscp-builtins/build gmx
 RUN ninja -C ./gromacs-smcp/build gmx
 #RUN ninja -C ./gromacs-hip/build gmx
-COPY kernel-flavor-test-mdps.tar.gz /
-COPY --chmod=755 init-water-benchmark.sh /
+COPY common/kernel-flavor-test-mdps.tar.gz /
+COPY --chmod=755 common/init-water-benchmark.sh /
 RUN bash init-water-benchmark.sh
-COPY --chmod=755 start.sh /
-COPY --chmod=755 post_start.sh /
-COPY --chmod=755 run_benchmarks.sh /
+COPY --chmod=755 common/start.sh /
+COPY --chmod=755 common/post_start.sh /
+COPY --chmod=755 common/run_benchmarks.sh /
 
 RUN apt -y install gdb debuginfod hip-runtime-amd-dbgsym
