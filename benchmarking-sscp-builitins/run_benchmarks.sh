@@ -18,7 +18,7 @@ done
 
 gmx_root_dir=`pwd`
 gmx_water_benchmark_root_dir=`pwd`/grappa-1.5k-6.1M_rc0.9
-benchmark_out_root=`pwd`/benchmark_results/sscp-profile-multiflavor/
+benchmark_out_root=`pwd`/benchmark_results/sscp-profile-multiflavor-rerun2
 
 export ACPP_PERSISTENT_RUNTIME=1 
 export ACPP_DEBUG_LEVEL=2
@@ -37,7 +37,7 @@ for i in $(seq 1 $iteration_num)
 do
     for gromacs_build in sscp-builtins-al1 sscp-builtins-al2 smcp 
     do
-      for flavor in rf fsw  psh  psw 
+      for flavor in  rf fsw  psh  psw 
       do
         case $gromacs_build in 
              sscp-base-al1)
@@ -114,24 +114,7 @@ do
                 echo "JIT-Optimization complete."
                 has_converged=true
                 echo "#final-num-runs $num_runs" >> $outfile
-            if [ "$USE_PROFILING" = false ]; then
-                echo "e2e run"
-                    set -e
-                    mkdir -p $benchmark_out_path
-                    mkdir -p $benchmark_out_path_water
-                    export ACPP_DEBUG_LEVEL=$ACPP_DEBUG_LEVEL
-                    export ACPP_ADAPTIVITY_LEVEL=$ACPP_ADAPTIVITY_LEVEL
-                    export ACPP_VISIBILITY_MASK=$ACPP_VISIBILITY_MASK
-                    export LD_LIBRARY_PATH=/opt/rocm/lib/:$LD_LIBRARY_PATH
-                    export ROCR_VISIBLE_DEVICES=$ROCR_VISIBLE_DEVICES
-                    export PATH=/opt/rocm/bin/:$PATH
-                    cd $benchmark_out_path_water
-                    $build_dir/bin/gmx mdrun -noconfout -nb gpu -bonded gpu  -update gpu  -pme $pme -pmefft cpu -nt 32  -nsteps -1 -maxh 0.009  -s $gmx_water_benchmark_root_dir/$water_box/$flavor/water.tpr &> $outfile
-                    grep Performance $outfile
-                    echo iter: $i build: $gromacs_build box: $water_box
-                    grep "kernel cache" $outfile  && echo "***** JIT DETECTED *****"  || echo "No Optimization"
-              num_runs=$((num_runs+1))
-                else
+            if [ "$USE_PROFILING" = true ]; then
                     echo "Profiling run"
                     set -e
                     mkdir -p $benchmark_out_path
@@ -140,8 +123,8 @@ do
                     export ACPP_ADAPTIVITY_LEVEL=$ACPP_ADAPTIVITY_LEVEL
                     export ACPP_VISIBILITY_MASK=$ACPP_VISIBILITY_MASK
                     export LD_LIBRARY_PATH=/opt/rocm/lib/:$LD_LIBRARY_PATH
-                    export AMD_SERIALIZE_COPY=3 
-                    export AMD_SERIALIZE_KERNEL=3
+                    #export AMD_SERIALIZE_COPY=3 
+                    #export AMD_SERIALIZE_KERNEL=3
                     #export ROCR_VISIBLE_DEVICES=$ROCR_VISIBLE_DEVICES
                     export PATH=/opt/rocm/bin/:$PATH
                     cd $benchmark_out_path_water
@@ -155,4 +138,5 @@ do
       done
     done 
 done
+
 
