@@ -115,9 +115,9 @@ do
               cd $benchmark_out_path_water
               outfile=$benchmark_out_path_water_host/out_$i.out
               if [ "$USE_PROFILING" = false ]; then
-                $build_dir/bin/gmx mdrun -noconfout -nb gpu -bonded gpu  -update gpu  -pme $pme -pmefft cpu -nt $ncpu  -nsteps -1 -maxh 0.009 -s $gmx_water_benchmark_root_dir/$water_box/$flavor/water.tpr &> $outfile
+                $build_dir/bin/gmx mdrun -noconfout -nb gpu -bonded gpu  -update gpu  -pme $pme -pmefft cpu -ntmpi 1 -ntomp $ncpu  -nsteps -1 -maxh 0.009 -s $gmx_water_benchmark_root_dir/$water_box/$flavor/water.tpr &> $outfile
               else
-                $build_dir/bin/gmx mdrun -noconfout -nb gpu -bonded gpu  -update gpu  -pme $pme -pmefft cpu -nt $ncpu  -nsteps 400  -s $gmx_water_benchmark_root_dir/$water_box/$flavor/water.tpr &> $outfile
+                $build_dir/bin/gmx mdrun -resethway -noconfout -nb gpu -bonded gpu  -update gpu  -pme $pme -pmefft cpu -ntmpi 1 -ntomp $ncpu  -nsteps 400  -s $gmx_water_benchmark_root_dir/$water_box/$flavor/water.tpr &> $outfile
               fi
               #echo $outfile          
               set +e
@@ -145,7 +145,7 @@ do
             fi
                     export PATH=/opt/rocm/bin/:$PATH
                     cd $benchmark_out_path_water
-                     /opt/rocm/bin/rocprofv2 --kernel-trace --plugin file -o kernel_trace  $build_dir/bin/gmx mdrun -noconfout -nb gpu -bonded gpu  -update gpu  -pme $pme -pmefft cpu -nt $ncpu  -nsteps 400  -s $gmx_water_benchmark_root_dir/$water_box/$flavor/water.tpr 2>&1 &>  out_$i.out
+                     /opt/rocm/bin/rocprofv2 --kernel-trace --plugin file -o kernel_trace  $build_dir/bin/gmx mdrun -noconfout -nb gpu -bonded gpu  -update gpu  -pme $pme -pmefft cpu -ntmpi 1 -ntomp $ncpu  -nsteps 400  -s $gmx_water_benchmark_root_dir/$water_box/$flavor/water.tpr 2>&1 &>  out_$i.out
                 fi
               fi
             done
