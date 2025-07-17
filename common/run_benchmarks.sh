@@ -3,22 +3,38 @@ set -e
 
 USE_PROFILING=false
 
-# Parse command-line arguments
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --profile)
             USE_PROFILING=true
-            shift ;;
+            shift
+            ;;
+         --profile-serialize)
+            USE_PROFILING=true
+            PROFILE_SERIALIZE=true
+            shift
+            ;;
+        --dirname)
+            if [[ -n "$2" && "$2" != --* ]]; then
+                DIRNAME="$2"
+                shift 2
+            else
+                echo "Error: --dirname requires a non-empty argument."
+                exit 1
+            fi
+            ;;
         *)
             echo "Unknown option: $1"
-            exit 1 ;;
+            exit 1
+            ;;
     esac
 done
 
+ncpu=8
 
 gmx_root_dir=`pwd`
 gmx_water_benchmark_root_dir=`pwd`/grappa-1.5k-6.1M_rc0.9
-benchmark_out_root=`pwd`/benchmark_results/sscp-profile-multiflavor-rerun2
+benchmark_out_root=`pwd`/benchmark_results/$DIRNAME
 
 export ACPP_PERSISTENT_RUNTIME=1 
 export ACPP_DEBUG_LEVEL=2
@@ -99,9 +115,9 @@ do
               cd $benchmark_out_path_water
               outfile=$benchmark_out_path_water_host/out_$i.out
               if [ "$USE_PROFILING" = false ]; then
-                $build_dir/bin/gmx mdrun -noconfout -nb gpu -bonded gpu  -update gpu  -pme $pme -pmefft cpu -nt 32  -nsteps -1 -maxh 0.009 -s $gmx_water_benchmark_root_dir/$water_box/$flavor/water.tpr &> $outfile
+                $build_dir/bin/gmx mdrun -noconfout -nb gpu -bonded gpu  -update gpu  -pme $pme -pmefft cpu -nt $ncpu  -nsteps -1 -maxh 0.009 -s $gmx_water_benchmark_root_dir/$water_box/$flavor/water.tpr &> $outfile
               else
-                $build_dir/bin/gmx mdrun -noconfout -nb gpu -bonded gpu  -update gpu  -pme $pme -pmefft cpu -nt 32  -nsteps 400  -s $gmx_water_benchmark_root_dir/$water_box/$flavor/water.tpr &> $outfile
+                $build_dir/bin/gmx mdrun -noconfout -nb gpu -bonded gpu  -update gpu  -pme $pme -pmefft cpu -nt $ncpu  -nsteps 400  -s $gmx_water_benchmark_root_dir/$water_box/$flavor/water.tpr &> $outfile
               fi
               #echo $outfile          
               set +e
@@ -123,12 +139,13 @@ do
                     export ACPP_ADAPTIVITY_LEVEL=$ACPP_ADAPTIVITY_LEVEL
                     export ACPP_VISIBILITY_MASK=$ACPP_VISIBILITY_MASK
                     export LD_LIBRARY_PATH=/opt/rocm/lib/:$LD_LIBRARY_PATH
-                    #export AMD_SERIALIZE_COPY=3 
-                    #export AMD_SERIALIZE_KERNEL=3
-                    #export ROCR_VISIBLE_DEVICES=$ROCR_VISIBLE_DEVICES
+            if [ "$PROFILE_SERIALIZE" = true ]; then
+                    export AMD_SERIALIZE_COPY=3 
+                    export AMD_SERIALIZE_KERNEL=3
+            fi
                     export PATH=/opt/rocm/bin/:$PATH
                     cd $benchmark_out_path_water
-                    /opt/rocm/bin/rocprofv2 --kernel-trace --plugin file -o kernel_trace $build_dir/bin/gmx mdrun -noconfout -nb gpu -bonded gpu  -update gpu  -pme $pme -pmefft cpu -nt 32  -nsteps 400  -s $gmx_water_benchmark_root_dir/$water_box/$flavor/water.tpr 2>&1 &>  out_$i.out
+                     /opt/rocm/bin/rocprofv2 --kernel-trace --plugin file -o kernel_trace  $build_dir/bin/gmx mdrun -noconfout -nb gpu -bonded gpu  -update gpu  -pme $pme -pmefft cpu -nt $ncpu  -nsteps 400  -s $gmx_water_benchmark_root_dir/$water_box/$flavor/water.tpr 2>&1 &>  out_$i.out
                 fi
               fi
             done
@@ -138,5 +155,4 @@ do
       done
     done 
 done
-
 
