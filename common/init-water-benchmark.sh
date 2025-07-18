@@ -2,7 +2,7 @@
 source environment.sh
 
 ROOT_DIR=`pwd`
-GMX_BIN_DIR=/gromacs-sscp-base/build/bin/
+GMX_BIN_DIR=/gromacs-sscp-builtins/build/bin/
 
 wget https://zenodo.org/records/11234002/files/grappa-1.5k-6.1M_rc0.9.tar.gz?download=1
 tar xvf grappa-1.5k-6.1M_rc0.9.tar.gz\?download\=1
