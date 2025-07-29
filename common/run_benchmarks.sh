@@ -53,7 +53,7 @@ for i in $(seq 1 $iteration_num)
 do
     for gromacs_build in sscp-builtins-al1 sscp-builtins-al2 smcp 
     do
-      for flavor in rf fsw psh #psw 
+      for flavor in rf fsw psh psw 
       do
         case $gromacs_build in 
              sscp-base-al1)
@@ -84,6 +84,10 @@ do
             smcp)
                 build_dir=/gromacs-smcp/build
                 benchmark_out_dir="smcp_${BASE_REPO_VERSION}_acpp_${ACPP_UPSTREAM_VERSION}_gmx_${GMX_UPSTREAM_VERSION}"
+                ;;
+            smcp-psplit)
+                build_dir=/gromacs-smcp-psplit/build
+                benchmark_out_dir="smcp_psplit${BASE_REPO_VERSION}_acpp_${ACPP_UPSTREAM_VERSION}_gmx_${GMX_UPSTREAM_VERSION}"
                 ;;
         esac
         benchmark_out_path=$benchmark_out_root/$benchmark_out_dir
