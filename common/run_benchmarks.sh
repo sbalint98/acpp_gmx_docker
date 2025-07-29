@@ -30,7 +30,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-ncpu=8
+ncpu=32
 
 gmx_root_dir=`pwd`
 gmx_water_benchmark_root_dir=`pwd`/grappa-1.5k-6.1M_rc0.9
@@ -53,7 +53,7 @@ for i in $(seq 1 $iteration_num)
 do
     for gromacs_build in sscp-builtins-al1 sscp-builtins-al2 smcp 
     do
-      for flavor in  rf fsw  psh  psw 
+      for flavor in rf fsw psh #psw 
       do
         case $gromacs_build in 
              sscp-base-al1)
@@ -97,6 +97,31 @@ do
         fi
         for water_box in  0001.5  0003  0006  0012  0024  0048 0096  0192  0384  0768  1536  3072 #6144
             do
+            box_value=$(echo "$water_box" | sed 's/^0*//')
+            box_float=$(printf "%.4f" "$box_value")
+            skip_run=false
+
+            if (( $(echo "$box_float <= 6" | bc -l) )); then
+                time_control="-nsteps 200000 --resetstep 160000"
+            elif (( $(echo "$box_float <= 48" | bc -l) )); then
+                time_control="-nsteps 100000 --resetstep 80000"
+            elif (( $(echo "$box_float <= 96" | bc -l) )); then
+                time_control="-nsteps 50000 --resetstep 40000"
+            elif (( $(echo "$box_float <= 192" | bc -l) )); then
+                time_control="-nsteps 15000 --resetstep 12000"
+            elif (( $(echo "$box_float <= 1536" | bc -l) )); then
+               if (( i > 3 )); then
+                  skip_run=true
+               fi
+               time_control="-nsteps 10000 --resetstep 8000"
+            else
+               if (( i > 3 )); then
+                  skip_run=true
+               fi
+               time_control="-nsteps 5000 --resetstep 4000"
+            fi
+
+
             benchmark_out_path_water=$benchmark_out_path/$water_box/$flavor
             benchmark_out_path_water_host=$benchmark_out_path_water
             has_converged=false
@@ -114,10 +139,17 @@ do
               export LD_LIBRARY_PATH=/opt/rocm/lib/:$LD_LIBRARY_PATH
               cd $benchmark_out_path_water
               outfile=$benchmark_out_path_water_host/out_$i.out
-              if [ "$USE_PROFILING" = false ]; then
-                $build_dir/bin/gmx mdrun -noconfout -nb gpu -bonded gpu  -update gpu  -pme $pme -pmefft cpu -ntmpi 1 -ntomp $ncpu  -nsteps -1 -maxh 0.009 -s $gmx_water_benchmark_root_dir/$water_box/$flavor/water.tpr &> $outfile
+              if [ "$USE_PROFILING" = false ] ; then
+                if  [ "$skip_run" = false ] ; then
+                echo running e2e $water_box $flavor
+                start_time=$(date +%s)
+                $build_dir/bin/gmx mdrun $time_control -noconfout -nb gpu -bonded gpu  -update gpu  -pme $pme -pmefft cpu -ntmpi 1 -ntomp $ncpu -s $gmx_water_benchmark_root_dir/$water_box/$flavor/water.tpr &> $outfile
+                end_time=$(date +%s)
+                duration=$((end_time - start_time))
+                echo " Took $duration s at: `date`"
+                fi
               else
-                $build_dir/bin/gmx mdrun -resethway -noconfout -nb gpu -bonded gpu  -update gpu  -pme $pme -pmefft cpu -ntmpi 1 -ntomp $ncpu  -nsteps 400  -s $gmx_water_benchmark_root_dir/$water_box/$flavor/water.tpr &> $outfile
+                $build_dir/bin/gmx mdrun  -notunepme -noconfout -nb gpu -bonded gpu  -update gpu  -pme $pme -pmefft cpu -ntmpi 1 -ntomp $ncpu  -nsteps 400  -s $gmx_water_benchmark_root_dir/$water_box/$flavor/water.tpr &> $outfile
               fi
               #echo $outfile          
               set +e
@@ -145,7 +177,7 @@ do
             fi
                     export PATH=/opt/rocm/bin/:$PATH
                     cd $benchmark_out_path_water
-                     /opt/rocm/bin/rocprofv2 --kernel-trace --plugin file -o kernel_trace  $build_dir/bin/gmx mdrun -noconfout -nb gpu -bonded gpu  -update gpu  -pme $pme -pmefft cpu -ntmpi 1 -ntomp $ncpu  -nsteps 400  -s $gmx_water_benchmark_root_dir/$water_box/$flavor/water.tpr 2>&1 &>  out_$i.out
+                     /opt/rocm/bin/rocprofv2 --kernel-trace --plugin file -o kernel_trace  $build_dir/bin/gmx mdrun -notunepme -noconfout -nb gpu -bonded gpu  -update gpu  -pme $pme -pmefft cpu -ntmpi 1 -ntomp $ncpu  -nsteps 400  -s $gmx_water_benchmark_root_dir/$water_box/$flavor/water.tpr 2>&1 &>  out_$i.out
                 fi
               fi
             done
