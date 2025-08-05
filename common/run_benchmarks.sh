@@ -86,7 +86,7 @@ do
                 benchmark_out_dir="smcp_${BASE_REPO_VERSION}_acpp_${ACPP_UPSTREAM_VERSION}_gmx_${GMX_UPSTREAM_VERSION}"
                 ;;
             smcp-psplit)
-                build_dir=/gromacs-smcp-psplit/build
+                build_dir=/gromacs-smcp/build-psplit
                 benchmark_out_dir="smcp_psplit${BASE_REPO_VERSION}_acpp_${ACPP_UPSTREAM_VERSION}_gmx_${GMX_UPSTREAM_VERSION}"
                 ;;
         esac
