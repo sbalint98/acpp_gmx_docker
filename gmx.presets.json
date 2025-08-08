@@ -1,0 +1,53 @@
+{
+  "$schema": "https://cmake.org/cmake/help/latest/manual/cmake-presets.7.schema.json",
+  "version": 8,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 23
+  },
+  "configurePresets": [
+    {
+      "name": "gmx-base-release",
+      "hidden": true,
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "GMX_USE_ROCTX": "ON",
+        "BUILD_TESTING": "ON",
+        "GMX_SIMD": "AVX2_128",
+        "REGRESSIONTEST_DOWNLOAD": "ON"
+      }
+    },
+    {
+      "name": "gmx-acpp-base",
+      "hidden": true,
+      "inherits": "gmx-base-release",
+      "cacheVariables": {
+        "GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT": "ON",
+        "GMX_GPU": "SYCL",
+        "GMX_SYCL": "ACPP"
+      }
+    },
+    {
+      "name": "gromacs-sscp-builtins",
+      "displayName": "GROMACS SSCP (Builtins)",
+      "description": "Builds GROMACS with AdaptiveCpp in SSCP mode",
+      "inherits": "gmx-acpp-base",
+      "sourceDir": "./gromacs-sscp-builtins",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "GMX_GPU_FFT_LIBRARY": "VkFFT",
+        "CMAKE_C_COMPILER": "clang-$env{LLVM_SSCP_VERSION}",
+        "CMAKE_CXX_COMPILER": "clang++-$env{LLVM_SSCP_VERSION}",
+        "CMAKE_PREFIX_PATH": "$env{ADAPTIVE_CPP_INSTALL_PATH}/lib/cmake/AdaptiveCpp",
+        "ACPP_TARGETS": "generic"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "gromacs-sscp-builtins-build",
+      "configurePreset": "gromacs-sscp-builtins"
+    }
+  ]
+}

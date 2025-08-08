@@ -1,0 +1,190 @@
+# This Dockerfile creates the common build environment for GROMACS and AdaptiveCpp.
+# It will serve as the 'base' stage in our final multi-stage build.
+FROM rocm/dev-ubuntu-24.04:6.4.1 AS base
+
+# Use ARGs to define versions. These can be overridden at build time.
+ARG LLVM_SSCP_VERSION=17
+ARG LLVM_SMCP_VERSION=19
+
+# =========================================================================
+# 1. CONSOLIDATE PACKAGE INSTALLATION
+#    Combine all 'apt' commands into a single RUN layer to reduce image size
+#    and improve build speed. Always clean up apt caches afterward.
+# =========================================================================
+RUN apt-get update && \
+    # Using DEBIAN_FRONTEND=noninteractive prevents interactive prompts.
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    # General build tools
+    cmake \
+    git \
+    gnupg \
+    lsb-release \
+    software-properties-common \
+    vim \
+    wget \
+    ninja-build \
+    # Compression and inspection tools
+    lz4 \
+    pax-utils \
+    valgrind \
+    # Python & Pip
+    python3-pip \
+    python3.12-venv \
+    # Boost dependencies
+    libboost-context-dev \
+    libboost-fiber-dev \
+    libboost-filesystem-dev \
+    libboost-test-dev \
+    # Other libraries
+    libfftw3-dev \
+    libamdhip64-dev \
+    # ROCm tools
+    rocm-cmake \
+    roctracer-dev \
+    rocprofiler-dev \
+    rocprofiler-compute \
+    # Debugging symbols
+    hip-runtime-amd-dbgsym \
+    # Other utilities
+    ssh \
+    openssh-server \
+    nginx \
+    gdb \
+    debuginfod \
+    locales && \
+    # Clean up apt caches to reduce final image size
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# =========================================================================
+# 2. OPTIMIZE LLVM/CLANG INSTALLATION
+#    Download and execute the llvm.sh script once, installing all required
+#    versions, and clean up immediately in the same RUN command.
+# =========================================================================
+RUN wget https://apt.llvm.org/llvm.sh && \
+    chmod +x llvm.sh && \
+    # The script can take multiple version numbers at once
+    bash ./llvm.sh $LLVM_SSCP_VERSION $LLVM_SMCP_VERSION && \
+    # Install all necessary components for both versions
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      libclang-${LLVM_SSCP_VERSION}-dev \
+      clang-tools-${LLVM_SSCP_VERSION} \
+      libclang-${LLVM_SMCP_VERSION}-dev \
+      clang-tools-${LLVM_SMCP_VERSION} \
+      libomp-${LLVM_SMCP_VERSION}-dev && \
+    # Clean up the downloaded script and apt caches
+    rm llvm.sh && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# =========================================================================
+# 3. CONSOLIDATE SYMBOLIC LINKING
+#    Group all linking commands into a single layer for clarity and efficiency.
+#    This links the OpenMP from the newer SMCP Clang to the older SSCP Clang.
+# =========================================================================
+RUN ln -sf /usr/lib/llvm-$LLVM_SMCP_VERSION/lib/clang/$LLVM_SMCP_VERSION/include/omp-tools.h /usr/lib/llvm-$LLVM_SSCP_VERSION/lib/clang/$LLVM_SSCP_VERSION/include/omp-tools.h && \
+    ln -sf /usr/lib/llvm-$LLVM_SMCP_VERSION/lib/clang/$LLVM_SMCP_VERSION/include/omp.h /usr/lib/llvm-$LLVM_SSCP_VERSION/lib/clang/$LLVM_SSCP_VERSION/include/omp.h && \
+    # Note: Correcting a potential typo in the original file (ompt-multiplex.hlex.h)
+    ln -sf /usr/lib/llvm-$LLVM_SMCP_VERSION/lib/clang/$LLVM_SMCP_VERSION/include/ompt-multiplex.h /usr/lib/llvm-$LLVM_SSCP_VERSION/lib/clang/$LLVM_SSCP_VERSION/include/ompt-multiplex.h && \
+    ln -sf /usr/lib/llvm-$LLVM_SMCP_VERSION/lib/clang/$LLVM_SMCP_VERSION/include/ompt.h /usr/lib/llvm-$LLVM_SSCP_VERSION/lib/clang/$LLVM_SSCP_VERSION/include/ompt.h && \
+    ln -sf /usr/lib/llvm-$LLVM_SMCP_VERSION/lib/clang/$LLVM_SMCP_VERSION/include/ompx.h /usr/lib/llvm-$LLVM_SSCP_VERSION/lib/clang/$LLVM_SSCP_VERSION/include/ompx.h && \
+    ln -sf /usr/lib/llvm-$LLVM_SMCP_VERSION/lib/libomptarget.so /usr/lib/llvm-$LLVM_SSCP_VERSION/lib/libomptarget.so && \
+    ln -sf /usr/lib/llvm-$LLVM_SMCP_VERSION/lib/libgomp.so /usr/lib/llvm-$LLVM_SSCP_VERSION/lib/libgomp.so && \
+    ln -sf /usr/lib/llvm-$LLVM_SMCP_VERSION/lib/libiomp5.so /usr/lib/llvm-$LLVM_SSCP_VERSION/lib/libiomp5.so && \
+    ln -sf /usr/lib/llvm-$LLVM_SMCP_VERSION/lib/libomp.so /usr/lib/llvm-$LLVM_SSCP_VERSION/lib/libomp.so
+
+# =========================================================================
+# 4. SET UP PYTHON & LOCALE ENVIRONMENT
+#    Consolidate environment setup steps into a single layer.
+# =========================================================================
+# Set environment variables that will be inherited by subsequent stages.
+ENV ROCM_PATH=/opt/rocm/
+
+RUN pip install --no-cache-dir --break-system-packages --ignore-installed -r /opt/rocm-6.4.1/libexec/rocprofiler-compute/requirements.txt && \
+    locale-gen en_US.UTF-8 && \
+    update-locale LANG=en_US.UTF-8
+
+ENV LC_ALL=en_US.UTF-8
+ENV LANG=en_US.UTF-8
+ENV LLVM_SSCP_VERSION=${LLVM_SSCP_VERSION}
+ENV LLVM_SMCP_VERSION=${LLVM_SMCP_VERSION}
+# =========================================================================
+# END OF BASE STAGE
+# We will now add 'builder-*' stages that start FROM this 'base'
+# stage to clone and build the different versions of GROMACS and AdaptiveCpp.
+# =========================================================================
+
+{% for variant in acpp_variants %}
+# =========================================================================
+# 5. ACPP BUILDER STAGE for {{ variant.name }}
+#    This stage builds the AdaptiveCpp variant specified in the versions.toml.
+# =========================================================================
+
+FROM base AS acpp-{{ variant.name }}
+
+ARG LLVM_SSCP_VERSION
+ARG LLVM_SMCP_VERSION
+
+ENV LLVM_SSCP_VERSION=$LLVM_SSCP_VERSION
+ENV LLVM_SMCP_VERSION=$LLVM_SMCP_VERSION
+
+ENV ACPP_CMAKE_PRESET={{ variant.cmake_preset }}
+ENV ACPP_BRANCH={{ variant.branch }}
+ENV ACPP_REPO={{ variant.repo }}
+ENV ACPP_COMMIT={{ variant.commit }}
+ENV ACPP_DIR={{ variant.directory }}
+
+ADD ${ACPP_REPO}#${ACPP_COMMIT} /${ACPP_DIR}
+
+COPY ./acpp.presets.json /${ACPP_DIR}/CMakeUserPresets.json
+
+RUN cmake  -S ${ACPP_DIR} --preset ${ACPP_CMAKE_PRESET} 
+RUN cmake --build ${ACPP_DIR}/build 
+RUN cmake --install ${ACPP_DIR}/build 
+{% endfor %}
+
+{% for variant in gromacs_variants %}
+# =========================================================================
+# 6. GROMACS BUILDER STAGE for {{ variant.name }}
+#    This stage builds the GROMACS variant specified in the versions.toml.
+# ========================================================================= 
+
+FROM acpp-{{ variant.acpp_variant }} AS gromacs-{{ variant.name }} 
+
+ARG LLVM_SSCP_VERSION
+ARG LLVM_SMCP_VERSION
+
+ENV LLVM_SSCP_VERSION=$LLVM_SSCP_VERSION
+ENV LLVM_SMCP_VERSION=$LLVM_SMCP_VERSION
+
+ENV GMX_CMAKE_PRESET={{ variant.cmake_preset }}
+ENV GMX_BRANCH={{ variant.branch }}
+ENV GMX_REPO={{ variant.repo }}
+ENV GMX_COMMIT={{ variant.commit }}
+ENV GMX_DIR={{ variant.directory }}
+
+ADD ${GMX_REPO}#${GMX_COMMIT} /${GMX_DIR}
+
+COPY ./gmx.presets.json /${ACPP_DIR}/CMakeUserPresets.json
+
+RUN cmake -S ${GMX_DIR} --preset ${GMX_CMAKE_PRESET} 
+RUN cmake --build ${GMX_DIR}/build
+RUN cmake --install ${GMX_DIR}/build
+
+{% endfor%}
+
+
+# =========================================================================
+# 7. FINAL STAGE
+#    This stage consolidates all the built artifacts into a final image.
+# =========================================================================
+FROM base AS final
+# Copy the built AdaptiveCpp and GROMACS artifacts from the respective builder stages.
+{% for variant in acpp_variants %}
+COPY --from=acpp-{{ variant.name }} /{{ variant.directory }}/build/install /{{ variant.directory }}/build/install
+{% endfor %}
+
+{% for variant in gromacs_variants %}
+COPY --from=gromacs-{{ variant.name }} /{{ variant.directory }}/build/install /{{ variant.directory }}/build/install
+{% endfor %}

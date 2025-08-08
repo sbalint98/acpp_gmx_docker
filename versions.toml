@@ -1,0 +1,30 @@
+# A list of all AdaptiveCpp variants that can be built.
+[repositories]
+acpp = [
+  { name = "official", url = "https://github.com/AdaptiveCpp/AdaptiveCpp.git" },
+  { name = "fork", url = "https://github.com/sbalint98/AdaptiveCpp.git" }
+]
+gromacs = [
+  { name = "official", url = "https://gitlab.com/sbalint98/gromacs.git" }
+]
+
+[[acpp_variants]]
+name = "sscp-builtins-wgscope"
+directory = "acpp-sscp-builtins-wgscope"
+branch = "bsoproni-all-gmx-builtins-barrier-wgscope"
+cmake_preset = "sscp"
+
+[[acpp_variants]]
+name = "v25020"
+directory = "acpp-smcp-v2502"
+branch = "v25.02.0"
+cmake_preset = "smcp"
+
+[[gromacs_variants]]
+name = "sscp-builtins-all-arch-vkfft"
+branch = "enable-sscp-builtins-all-arch-fft"
+directory = "gromacs-sscp-builtins-all-arch-vkfft"
+cmake_preset = "generic-sscp-fft"
+acpp_variant = "sscp-builtins-wgscope"
+
+
