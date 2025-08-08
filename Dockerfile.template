@@ -197,3 +197,9 @@ COPY --from=gromacs-{{ variant.name }} /{{ variant.directory }}/build/ /{{ varia
 COPY --chmod=755 common/start.sh /
 COPY --chmod=755 common/post_start.sh /
 COPY --chmod=755 common/run_benchmarks.sh /
+COPY benchmark_config.toml /benchmark_config.toml
+COPY versions.toml /versions.toml
+COPY Dockerfile /Dockerfile
+COPY run_benchmarks.py /run_benchmarks.py
+
+RUN apt install python3-toml -y
