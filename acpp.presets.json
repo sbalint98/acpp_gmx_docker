@@ -22,7 +22,7 @@
       "inherits": "base-config",
       "cacheVariables": {
         "LLVM_DIR": "/usr/lib/llvm-$env{LLVM_SSCP_VERSION}/lib/cmake/llvm/",
-        "CMAKE_INSTALL_PREFIX": "${sourceDir}/install-sscp"
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/install"
       }
     },
     {
@@ -34,16 +34,6 @@
         "CMAKE_INSTALL_PREFIX": "${sourceDir}/install"
       }
     } 
-  ],
-  "buildPresets": [
-    {
-      "name": "smcp",
-      "configurePreset": "smcp"
-    },
-    {
-      "name": "sscp",
-      "configurePreset": "sscp"
-    }
   ]
 }
 

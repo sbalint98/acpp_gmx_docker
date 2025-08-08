@@ -63,20 +63,20 @@ RUN apt-get update && \
 # =========================================================================
 RUN wget https://apt.llvm.org/llvm.sh && \
     chmod +x llvm.sh && \
-    # The script can take multiple version numbers at once
-    bash ./llvm.sh $LLVM_SSCP_VERSION $LLVM_SMCP_VERSION && \
-    # Install all necessary components for both versions
+    bash ./llvm.sh $LLVM_SSCP_VERSION && \
     apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
       libclang-${LLVM_SSCP_VERSION}-dev \
-      clang-tools-${LLVM_SSCP_VERSION} \
+      clang-tools-${LLVM_SSCP_VERSION} 
+
+RUN wget https://apt.llvm.org/llvm.sh && \
+    chmod +x llvm.sh && \
+    bash ./llvm.sh $LLVM_SMCP_VERSION $LLVM_SMCP_VERSION && \
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
       libclang-${LLVM_SMCP_VERSION}-dev \
       clang-tools-${LLVM_SMCP_VERSION} \
-      libomp-${LLVM_SMCP_VERSION}-dev && \
-    # Clean up the downloaded script and apt caches
-    rm llvm.sh && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+      libomp-${LLVM_SMCP_VERSION}-dev
 
 # =========================================================================
 # 3. CONSOLIDATE SYMBOLIC LINKING
@@ -187,7 +187,7 @@ RUN cmake --install ${GMX_DIR}/build
 FROM base AS final
 # Copy the built AdaptiveCpp and GROMACS artifacts from the respective builder stages.
 {% for variant in acpp_variants %}
-COPY --from=acpp-{{ variant.name }} /{{ variant.directory }}/build/install /{{ variant.directory }}/build/install
+COPY --from=acpp-{{ variant.name }} /{{ variant.directory }}/build/ /{{ variant.directory }}/build/
 {% endfor %}
 
 {% for variant in gromacs_variants %}
