@@ -10,6 +10,8 @@
       "name": "gmx-base-release",
       "hidden": true,
       "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build",
+      "installDir": "${sourceDir}/build/install",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "GMX_USE_ROCTX": "ON",
@@ -24,30 +26,84 @@
       "inherits": "gmx-base-release",
       "cacheVariables": {
         "GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT": "ON",
+        "CMAKE_PREFIX_PATH": "$env{ADAPTIVE_CPP_INSTALL_PATH}/lib/cmake/AdaptiveCpp",
         "GMX_GPU": "SYCL",
         "GMX_SYCL": "ACPP"
       }
     },
     {
-      "name": "gromacs-sscp-builtins",
-      "displayName": "GROMACS SSCP (Builtins)",
-      "description": "Builds GROMACS with AdaptiveCpp in SSCP mode",
+      "name": "smcp-base",
       "inherits": "gmx-acpp-base",
-      "sourceDir": "./gromacs-sscp-builtins",
-      "binaryDir": "${sourceDir}/build",
+      "hidden": true,
       "cacheVariables": {
         "GMX_GPU_FFT_LIBRARY": "VkFFT",
+        "CMAKE_C_COMPILER": "clang-$env{LLVM_SMCP_VERSION}",
+        "CMAKE_CXX_COMPILER": "clang++-$env{LLVM_SMCP_VERSION}"
+      }
+    },
+    {
+      "name": "smcp-cdna",
+      "inherits": "smcp-base",
+      "cacheVariables": {
+        "ACPP_TARGETS": "hip:gfx906,gfx908,gfx90a,gfx940,gfx942"
+      }
+    },
+    {
+      "name": "smcp-rdna",
+      "inherits": "smcp-base",
+      "cacheVariables": {
+        "ACPP_TARGETS": "hip:gfx1201,gfx1030,gfx1100"
+      }
+    },
+    {
+      "name": "sscp-rdna-base",
+      "hidden": true,
+      "cacheVariables": {
+        "GMX_ENABLE_AMD_RDNA_SUPPORT": "ON",
+        "GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT": "OFF"
+      }
+    },
+    {
+      "name": "sscp-cdna-base",
+      "hidden": true,
+      "cacheVariables": {
+        "GMX_ENABLE_AMD_RDNA_SUPPORT": "OFF",
+        "GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT": "ON"
+      }
+    },
+    {
+      "name": "sscp-base",
+      "hidden": true,
+      "inherits": "gmx-acpp-base",
+      "cacheVariables": {
+        "GMX_GPU_FFT_LIBRARY": "none",
         "CMAKE_C_COMPILER": "clang-$env{LLVM_SSCP_VERSION}",
         "CMAKE_CXX_COMPILER": "clang++-$env{LLVM_SSCP_VERSION}",
-        "CMAKE_PREFIX_PATH": "$env{ADAPTIVE_CPP_INSTALL_PATH}/lib/cmake/AdaptiveCpp",
         "ACPP_TARGETS": "generic"
       }
-    }
-  ],
-  "buildPresets": [
+    },
     {
-      "name": "gromacs-sscp-builtins-build",
-      "configurePreset": "gromacs-sscp-builtins"
+      "name": "sscp-fft",
+      "hidden": true,
+      "cacheVariables": {
+        "GMX_GPU_FFT_LIBRARY": "VkFFT"
+      }
+    },
+    {
+      "name": "sscp-cdna-fft",
+      "inherits": ["sscp-base", "sscp-cdna-base", "sscp-fft"]
+    },
+    {
+      "name": "sscp-rdna-fft",
+      "inherits": ["sscp-base", "sscp-rdna-base", "sscp-fft"]
+    },
+    {
+      "name": "sscp-rdna",
+      "inherits": ["sscp-base", "sscp-rdna-base"]
+    },
+    {
+      "name": "sscp-cdna",
+      "inherits": ["sscp-base", "sscp-cdna-base"]
     }
   ]
 }

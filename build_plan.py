@@ -72,6 +72,7 @@ def main(file_path):
             gmx_commit = resolve_commit(gmx['branch'], gmx_repos_to_search)
             gmx['commit'] = gmx_commit.commit_hash
             gmx['repo'] = gmx_commit.repo
+            gmx['acpp_install_root'] = resolved_acpp[acpp_name]['directory']
             gmx_variants.append(gmx)
 
 

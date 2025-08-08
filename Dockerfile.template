@@ -105,6 +105,10 @@ RUN pip install --no-cache-dir --break-system-packages --ignore-installed -r /op
     locale-gen en_US.UTF-8 && \
     update-locale LANG=en_US.UTF-8
 
+COPY common/grappa-1.5k-6.1M_rc0.9.tar.gz /grappa-1.5k-6.1M_rc0.9.tar.gz
+RUN tar -xzf /grappa-1.5k-6.1M_rc0.9.tar.gz -C / && \
+    rm /grappa-1.5k-6.1M_rc0.9.tar.gz
+
 ENV LC_ALL=en_US.UTF-8
 ENV LANG=en_US.UTF-8
 ENV LLVM_SSCP_VERSION=${LLVM_SSCP_VERSION}
@@ -164,9 +168,10 @@ ENV GMX_REPO={{ variant.repo }}
 ENV GMX_COMMIT={{ variant.commit }}
 ENV GMX_DIR={{ variant.directory }}
 
+ENV ADAPTIVE_CPP_INSTALL_PATH=/{{ variant.acpp_install_root }}/build/install/
 ADD ${GMX_REPO}#${GMX_COMMIT} /${GMX_DIR}
 
-COPY ./gmx.presets.json /${ACPP_DIR}/CMakeUserPresets.json
+COPY ./gmx.presets.json /${GMX_DIR}/CMakeUserPresets.json
 
 RUN cmake -S ${GMX_DIR} --preset ${GMX_CMAKE_PRESET} 
 RUN cmake --build ${GMX_DIR}/build
@@ -186,5 +191,9 @@ COPY --from=acpp-{{ variant.name }} /{{ variant.directory }}/build/install /{{ v
 {% endfor %}
 
 {% for variant in gromacs_variants %}
-COPY --from=gromacs-{{ variant.name }} /{{ variant.directory }}/build/install /{{ variant.directory }}/build/install
+COPY --from=gromacs-{{ variant.name }} /{{ variant.directory }}/build/ /{{ variant.directory }}/build/
 {% endfor %}
+
+COPY --chmod=755 common/start.sh /
+COPY --chmod=755 common/post_start.sh /
+COPY --chmod=755 common/run_benchmarks.sh /
