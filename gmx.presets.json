@@ -91,11 +91,11 @@
     },
     {
       "name": "sscp-cdna-fft",
-      "inherits": ["sscp-base", "sscp-cdna-base", "sscp-fft"]
+      "inherits": ["sscp-fft", "sscp-base", "sscp-cdna-base"]
     },
     {
       "name": "sscp-rdna-fft",
-      "inherits": ["sscp-base", "sscp-rdna-base", "sscp-fft"]
+      "inherits": ["sscp-fft", "sscp-base", "sscp-rdna-base"]
     },
     {
       "name": "sscp-rdna",

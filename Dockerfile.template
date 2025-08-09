@@ -1,5 +1,6 @@
-# This Dockerfile creates the common build environment for GROMACS and AdaptiveCpp.
-# It will serve as the 'base' stage in our final multi-stage build.
+ARG NINJA_NUM_PROC
+
+
 FROM rocm/dev-ubuntu-24.04:6.4.1 AS base
 
 # Use ARGs to define versions. These can be overridden at build time.
@@ -37,7 +38,6 @@ RUN apt-get update && \
     libboost-test-dev \
     # Other libraries
     libfftw3-dev \
-    libamdhip64-dev \
     # ROCm tools
     rocm-cmake \
     roctracer-dev \
@@ -129,6 +129,7 @@ FROM base AS acpp-{{ variant.name }}
 
 ARG LLVM_SSCP_VERSION
 ARG LLVM_SMCP_VERSION
+ARG NINJA_NUM_PROC
 
 ENV LLVM_SSCP_VERSION=$LLVM_SSCP_VERSION
 ENV LLVM_SMCP_VERSION=$LLVM_SMCP_VERSION
@@ -144,7 +145,7 @@ ADD ${ACPP_REPO}#${ACPP_COMMIT} /${ACPP_DIR}
 COPY ./acpp.presets.json /${ACPP_DIR}/CMakeUserPresets.json
 
 RUN cmake  -S ${ACPP_DIR} --preset ${ACPP_CMAKE_PRESET} 
-RUN cmake --build ${ACPP_DIR}/build 
+RUN cmake --build ${ACPP_DIR}/build -j ${NINJA_NUM_PROC} 
 RUN cmake --install ${ACPP_DIR}/build 
 {% endfor %}
 
@@ -158,6 +159,7 @@ FROM acpp-{{ variant.acpp_variant }} AS gromacs-{{ variant.name }}
 
 ARG LLVM_SSCP_VERSION
 ARG LLVM_SMCP_VERSION
+ARG NINJA_NUM_PROC
 
 ENV LLVM_SSCP_VERSION=$LLVM_SSCP_VERSION
 ENV LLVM_SMCP_VERSION=$LLVM_SMCP_VERSION
@@ -174,7 +176,7 @@ ADD ${GMX_REPO}#${GMX_COMMIT} /${GMX_DIR}
 COPY ./gmx.presets.json /${GMX_DIR}/CMakeUserPresets.json
 
 RUN cmake -S ${GMX_DIR} --preset ${GMX_CMAKE_PRESET} 
-RUN cmake --build ${GMX_DIR}/build
+RUN cmake --build ${GMX_DIR}/build -j ${NINJA_NUM_PROC} -t tests gmx
 RUN cmake --install ${GMX_DIR}/build
 
 {% endfor%}

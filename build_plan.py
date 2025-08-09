@@ -36,6 +36,11 @@ def resolve_commit(ref_name, repos_to_search) -> commit:
     if len(found_commits) > 1: raise ValueError(f"Ambiguous reference '{ref_name}'.")
     return found_commits[0]
 
+def check_if_value_already_exists(field_name, value, items):
+    for i in items:
+        if i.get(field_name) == value:
+            raise ValueError(f"Duplicate {field_name} '{value}'. Please ensure all {field_name}s are unique.")
+
 def main(file_path):
     try:
         with open(file_path, 'r') as f:
@@ -56,6 +61,8 @@ def main(file_path):
             variant['commit'] = commit.commit_hash
             variant['repo'] = commit.repo
             resolved_acpp[name] = { 'commit': commit, **variant }
+            check_if_value_already_exists('name', name, acpp_variants)
+            check_if_value_already_exists('directory', variant['directory'], acpp_variants)
             acpp_variants.append(variant)
 
 
@@ -73,6 +80,8 @@ def main(file_path):
             gmx['commit'] = gmx_commit.commit_hash
             gmx['repo'] = gmx_commit.repo
             gmx['acpp_install_root'] = resolved_acpp[acpp_name]['directory']
+            check_if_value_already_exists('name', gmx_name, gmx_variants)
+            check_if_value_already_exists('directory', gmx['directory'], gmx_variants)
             gmx_variants.append(gmx)
 
 
