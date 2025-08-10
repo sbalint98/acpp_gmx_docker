@@ -1,0 +1,18 @@
+{
+  "$schema": "https://cmake.org/cmake/help/latest/_downloads/3e2d73bff478d88a7de0de736ba5e361/schema.json",
+  "version": 8,
+  "include": ["../../acpp/gmx-acpp-base.json"],
+  "configurePresets": [
+    {
+      "name": "sscp-base",
+      "hidden": true,
+      "inherits": "gmx-acpp-base",
+      "cacheVariables": {
+        "GMX_GPU_FFT_LIBRARY": "none",
+        "CMAKE_C_COMPILER": "clang-$env{LLVM_SSCP_VERSION}",
+        "CMAKE_CXX_COMPILER": "clang++-$env{LLVM_SSCP_VERSION}",
+        "ACPP_TARGETS": "generic"
+      }
+    }
+  ]
+} 

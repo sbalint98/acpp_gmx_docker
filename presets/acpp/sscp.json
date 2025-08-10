@@ -1,0 +1,16 @@
+{
+  "$schema": "https://cmake.org/cmake/help/latest/_downloads/3e2d73bff478d88a7de0de736ba5e361/schema.json",
+  "version": 8,
+  "include": ["base-config.json"],
+  "configurePresets": [
+    {
+      "name": "sscp",
+      "displayName": "Build for SSCP (Dynamic LLVM)",
+      "inherits": "base-config",
+      "cacheVariables": {
+        "LLVM_DIR": "/usr/lib/llvm-$env{LLVM_SSCP_VERSION}/lib/cmake/llvm/",
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/install"
+      }
+    }
+  ]
+} 

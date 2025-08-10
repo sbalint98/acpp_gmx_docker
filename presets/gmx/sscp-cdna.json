@@ -1,0 +1,11 @@
+{
+  "$schema": "https://cmake.org/cmake/help/latest/_downloads/3e2d73bff478d88a7de0de736ba5e361/schema.json",
+  "version": 8,
+  "include": ["sscp/sscp-cdna-base.json"],
+  "configurePresets": [
+    {
+      "name": "sscp-cdna",
+      "inherits": ["sscp-base", "sscp-cdna-base"]
+    }
+  ]
+} 

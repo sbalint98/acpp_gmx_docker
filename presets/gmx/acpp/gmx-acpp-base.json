@@ -1,0 +1,17 @@
+{
+  "$schema": "https://cmake.org/cmake/help/latest/_downloads/3e2d73bff478d88a7de0de736ba5e361/schema.json",
+  "version": 8,
+  "include": ["../base/gmx-base-release.json"],
+  "configurePresets": [
+    {
+      "name": "gmx-acpp-base",
+      "hidden": true,
+      "inherits": "gmx-base-release",
+      "cacheVariables": {
+        "CMAKE_PREFIX_PATH": "$env{ADAPTIVE_CPP_INSTALL_PATH}/lib/cmake/AdaptiveCpp",
+        "GMX_GPU": "SYCL",
+        "GMX_SYCL": "ACPP"
+      }
+    }
+  ]
+} 

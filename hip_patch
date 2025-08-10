@@ -1,0 +1,10 @@
+diff --git a/cmake/gmxManageHipccConfig.cmake b/cmake/gmxManageHipccConfig.cmake
+index 4f9d40c6c8..a61744e751 100644
+--- a/cmake/gmxManageHipccConfig.cmake
++++ b/cmake/gmxManageHipccConfig.cmake
+@@ -201,4 +201,5 @@ function(gmx_hip_add_library TARGET)
+     if (GMX_LIB_MPI)
+         target_link_libraries(${TARGET} PRIVATE MPI::MPI_CXX)
+     endif ()
++    target_link_libraries(${TARGET} PRIVATE roc::rocprim_hip)
+ endfunction()

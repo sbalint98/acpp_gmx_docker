@@ -1,0 +1,75 @@
+# ===================================================================
+# Benchmark Suite Configuration
+# This file defines HOW to run the benchmarks. You can have multiple
+# versions of this file for different target GPUs or scenarios.
+# ===================================================================
+[benchmark]
+ncpu = 32
+iterations = 5
+profile_iterations = 1
+flavors = ["rf", "fsw", "psh", "psw"]
+water_boxes = [
+    "0001.5", "0003", "0006", "0012", "0024", "0048", 
+    "0096", "0192", "0384", "0768", "1536", "3072"
+]
+water_box_source_dir = "grappa-1.5k-6.1M_rc0.9"
+adaptivity_levels_to_check = [1]
+
+
+[[benchmark.variants_to_run]]
+name = "gromacs-final-cdna-fft"
+run_fft = true
+
+[[benchmark.variants_to_run]]
+name = "gromacs-smcp-v2502"
+run_fft = true
+
+
+# --- Environment variables for benchmark runs ---
+[benchmark.environment]
+ACPP_PERSISTENT_RUNTIME = "1"
+ACPP_DEBUG_LEVEL = "2"
+ACPP_VISIBILITY_MASK = "hip"
+# Prefixes are added to the existing environment variables
+LD_LIBRARY_PATH_PREFIX = "/opt/rocm/lib/"
+PATH_PREFIX = "/opt/rocm/bin/"
+
+# --- Rules for setting mdrun time control parameters ---
+# The script will iterate through these rules and apply the first one that matches.
+[[benchmark.time_control_rules]]
+description = "Very small boxes"
+max_box_size = 6
+nsteps = 200000
+resetstep = 160000
+
+[[benchmark.time_control_rules]]
+description = "Small boxes"
+max_box_size = 48
+nsteps = 100000
+resetstep = 80000
+
+[[benchmark.time_control_rules]]
+description = "Medium boxes"
+max_box_size = 96
+nsteps = 50000
+resetstep = 40000
+
+[[benchmark.time_control_rules]]
+description = "Large boxes"
+max_box_size = 192
+nsteps = 15000
+resetstep = 12000
+
+[[benchmark.time_control_rules]]
+description = "Very large boxes"
+max_box_size = 1536
+nsteps = 10000
+resetstep = 8000
+iteration_cutoff = 3 # Optional: Skip runs after this iteration number
+
+[[benchmark.time_control_rules]]
+description = "Extremely large boxes (catch-all)"
+max_box_size = 99999 # Use a large number for the final rule
+nsteps = 5000
+resetstep = 4000
+iteration_cutoff = 3

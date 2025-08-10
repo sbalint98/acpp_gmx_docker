@@ -4,6 +4,8 @@ import subprocess
 #import dataclass
 from dataclasses import dataclass
 from jinja2 import Environment, FileSystemLoader
+import os 
+import json
 
 @dataclass
 class commit:
@@ -41,6 +43,60 @@ def check_if_value_already_exists(field_name, value, items):
         if i.get(field_name) == value:
             raise ValueError(f"Duplicate {field_name} '{value}'. Please ensure all {field_name}s are unique.")
 
+
+def get_needed_presets(preset, type):
+    return_paths = []
+    folder = ''
+
+    if type == 'acpp':
+        folder = os.path.join('presets', 'acpp')
+    elif type == 'gromacs':
+        folder = os.path.join('presets', 'gmx')
+    else:
+        raise ValueError(f"Unknown type '{type}'. Expected 'acpp' or 'gromacs'.")
+
+    current_file_path = os.path.join(folder, f"{preset}.json")
+
+    if os.path.exists(current_file_path):
+        return_paths.append(current_file_path)
+        search_paths = []
+
+        try:
+            with open(current_file_path, 'r') as f:
+                data = json.load(f)
+
+            if 'include' in data and isinstance(data['include'], list):
+                for included_preset in data['include']:
+                    search_paths.append(os.path.join(folder, included_preset))
+                while search_paths:
+                    next_preset = search_paths.pop(0)
+                    next_file_path = next_preset#os.path.join(folder, next_preset)
+                    if os.path.exists(next_file_path):
+                        with open(next_file_path, 'r') as f:
+                            # get the directory of next_file_path
+                            folder = os.path.dirname(next_file_path)
+                            included_data = json.load(f)
+                        return_paths.append(next_file_path)
+                        if 'include' in included_data and isinstance(included_data['include'], list):
+                            for include in included_data['include']:
+                                search_paths.append(os.path.join(folder,include))
+                    else:
+                        raise ValueError(f"Included preset '{next_preset}' not found in {next_file_path}.")
+
+        except (json.JSONDecodeError, IOError) as e:
+            raise ValueError(f"Warning: Could not read or parse {current_file_path}. Error: {e}")
+    else:
+        raise ValueError(f"Preset file '{current_file_path}' does not exist.")
+    return_paths = list(dict.fromkeys(return_paths))
+    needed_presets = [os.path.relpath(p, start=os.getcwd()) for p in return_paths]
+    final = [(needed_presets[0], "CMakeUserPresets.json")]
+    for preset in needed_presets[1:]:
+        if type == "gromacs":
+            final.append((preset, preset.replace("presets/gmx/", "")))
+        else:
+            final.append((preset, preset.replace("presets/acpp/", "")))
+    return final
+
 def main(file_path):
     try:
         with open(file_path, 'r') as f:
@@ -63,12 +119,17 @@ def main(file_path):
             resolved_acpp[name] = { 'commit': commit, **variant }
             check_if_value_already_exists('name', name, acpp_variants)
             check_if_value_already_exists('directory', variant['directory'], acpp_variants)
+            needed_presets = get_needed_presets(variant['cmake_preset'], 'acpp')
+            variant['needed_presets'] = needed_presets
             acpp_variants.append(variant)
 
 
         # 2. Iterate through GROMACS variants (this part is unchanged)
         gmx_variants = []
         for gmx in config.get('gromacs_variants', []):
+            is_hip = gmx.get('hip', False)
+            if is_hip:  
+                continue
             gmx_name = gmx['name']
             acpp_name = gmx.get('acpp_variant')
 
@@ -82,7 +143,10 @@ def main(file_path):
             gmx['acpp_install_root'] = resolved_acpp[acpp_name]['directory']
             check_if_value_already_exists('name', gmx_name, gmx_variants)
             check_if_value_already_exists('directory', gmx['directory'], gmx_variants)
-            gmx_variants.append(gmx)
+            preset_type = gmx["cmake_preset"]
+            needed_presets = get_needed_presets(preset_type, 'gromacs')
+            gmx['needed_presets'] = needed_presets
+            gmx_variants.append(gmx)    
 
 
         # 3. Render the Dockerfile from the template

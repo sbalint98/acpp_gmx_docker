@@ -1,0 +1,16 @@
+{
+  "$schema": "https://cmake.org/cmake/help/latest/_downloads/3e2d73bff478d88a7de0de736ba5e361/schema.json",
+  "version": 8,
+  "include": ["base/sscp-base.json"],
+  "configurePresets": [
+    {
+      "name": "sscp-cdna-base",
+      "hidden": true,
+      "inherits": "sscp-base",
+      "cacheVariables": {
+        "GMX_ENABLE_AMD_RDNA_SUPPORT": "OFF",
+        "GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT": "ON"
+      }
+    }
+  ]
+} 

@@ -12,6 +12,7 @@ ARG LLVM_SMCP_VERSION=19
 #    Combine all 'apt' commands into a single RUN layer to reduce image size
 #    and improve build speed. Always clean up apt caches afterward.
 # =========================================================================
+COPY common/grappa-1.5k-6.1M_rc0.9.tar.gz /grappa-1.5k-6.1M_rc0.9.tar.gz
 RUN apt-get update && \
     # Using DEBIAN_FRONTEND=noninteractive prevents interactive prompts.
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
@@ -105,7 +106,6 @@ RUN pip install --no-cache-dir --break-system-packages --ignore-installed -r /op
     locale-gen en_US.UTF-8 && \
     update-locale LANG=en_US.UTF-8
 
-COPY common/grappa-1.5k-6.1M_rc0.9.tar.gz /grappa-1.5k-6.1M_rc0.9.tar.gz
 RUN tar -xzf /grappa-1.5k-6.1M_rc0.9.tar.gz -C / && \
     rm /grappa-1.5k-6.1M_rc0.9.tar.gz
 
@@ -142,7 +142,10 @@ ENV ACPP_DIR={{ variant.directory }}
 
 ADD ${ACPP_REPO}#${ACPP_COMMIT} /${ACPP_DIR}
 
-COPY ./acpp.presets.json /${ACPP_DIR}/CMakeUserPresets.json
+#COPY ./acpp.presets.json /${ACPP_DIR}/CMakeUserPresets.json
+{% for preset_tuple in variant.needed_presets %}
+COPY ./{{ preset_tuple[0] }} /${ACPP_DIR}/{{ preset_tuple[1] }}
+{% endfor %}
 
 RUN cmake  -S ${ACPP_DIR} --preset ${ACPP_CMAKE_PRESET} 
 RUN cmake --build ${ACPP_DIR}/build -j ${NINJA_NUM_PROC} 
@@ -173,13 +176,47 @@ ENV GMX_DIR={{ variant.directory }}
 ENV ADAPTIVE_CPP_INSTALL_PATH=/{{ variant.acpp_install_root }}/build/install/
 ADD ${GMX_REPO}#${GMX_COMMIT} /${GMX_DIR}
 
-COPY ./gmx.presets.json /${GMX_DIR}/CMakeUserPresets.json
+{% for preset_tuple in variant.needed_presets %}
+COPY ./{{ preset_tuple[0] }} /${GMX_DIR}/{{ preset_tuple[1] }}
+{% endfor %}
 
 RUN cmake -S ${GMX_DIR} --preset ${GMX_CMAKE_PRESET} 
 RUN cmake --build ${GMX_DIR}/build -j ${NINJA_NUM_PROC} -t tests gmx
 RUN cmake --install ${GMX_DIR}/build
 
 {% endfor%}
+
+# =========================================================================
+# Install HIP
+# =========================================================================
+
+FROM base as hip
+
+# Install rocprim
+ADD https://github.com/ROCm/rocPRIM.git rocPRIM
+
+RUN cmake -S /rocPRIM/ -B /rocPRIM/build \
+    -D CMAKE_C_COMPILER=hipcc \
+    -D CMAKE_CXX_COMPILER=hipcc  && \
+    cmake --build /rocPRIM/build -j ${NINJA_NUM_PROC} && \
+    cmake --install /rocPRIM/build --prefix=/rocPRIM/build/install/
+
+ADD https://github.com/ROCm/Gromacs.git#4947-hip-feature-enablement /gromacs-hip
+
+COPY ./hip_patch /gromacs-hip/patch
+
+WORKDIR /gromacs-hip
+RUN git apply patch 
+WORKDIR /
+
+COPY ./gmx.presets.json /gromacs-hip/gmx.presets.json
+COPY ./hip.gmx.preset.json /gromacs-hip/CMakeUserPresets.json
+COPY ./presets/gmx/base/gmx-base-release.json /gromacs-hip/gmx-base-release.json
+
+RUN cmake -S /gromacs-hip/ -B /gromacs-hip/build --preset hip-cdna 
+RUN cmake --build /gromacs-hip/build/ -j ${NINJA_NUM_PROC} -t tests gmx 
+RUN cmake --install /gromacs-hip/build 
+
 
 
 # =========================================================================
@@ -195,6 +232,8 @@ COPY --from=acpp-{{ variant.name }} /{{ variant.directory }}/build/ /{{ variant.
 {% for variant in gromacs_variants %}
 COPY --from=gromacs-{{ variant.name }} /{{ variant.directory }}/build/ /{{ variant.directory }}/build/
 {% endfor %}
+
+COPY --from=hip /gromacs-hip/build/ /gromacs-hip/build/
 
 COPY --chmod=755 common/start.sh /
 COPY --chmod=755 common/post_start.sh /

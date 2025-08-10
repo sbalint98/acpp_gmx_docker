@@ -1,0 +1,17 @@
+{
+  "$schema": "https://cmake.org/cmake/help/latest/_downloads/3e2d73bff478d88a7de0de736ba5e361/schema.json",
+  "version": 8,
+  "include": ["../acpp/gmx-acpp-base.json"],
+  "configurePresets": [
+    {
+      "name": "smcp-base",
+      "inherits": "gmx-acpp-base",
+      "hidden": true,
+      "cacheVariables": {
+        "GMX_GPU_FFT_LIBRARY": "VkFFT",
+        "CMAKE_C_COMPILER": "clang-$env{LLVM_SMCP_VERSION}",
+        "CMAKE_CXX_COMPILER": "clang++-$env{LLVM_SMCP_VERSION}"
+      }
+    }
+  ]
+} 

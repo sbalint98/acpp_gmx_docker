@@ -1,0 +1,20 @@
+{
+  "$schema": "https://cmake.org/cmake/help/latest/_downloads/3e2d73bff478d88a7de0de736ba5e361/schema.json",
+  "version": 8,
+  "configurePresets": [
+    {
+      "name": "gmx-base-release",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build",
+      "installDir": "${sourceDir}/build/install",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "GMX_USE_ROCTX": "ON",
+        "BUILD_TESTING": "ON",
+        "GMX_SIMD": "AVX2_128",
+        "REGRESSIONTEST_DOWNLOAD": "ON"
+      }
+    }
+  ]
+} 
