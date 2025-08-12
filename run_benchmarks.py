@@ -138,6 +138,8 @@ def main():
     variants_to_run = bench_params.get('variants_to_run', [])
     adaptivity_levels_to_check = bench_params.get('adaptivity_levels_to_check', [])
     
+    run_prefix_command = bench_params.get('run_command_prefix', '').split(" ")
+    
     # --- Validate required configuration keys ---
     if not variants_to_run:
         logging.error("The 'variants_to_run' key in the benchmark config cannot be empty. Please specify which variants to run.")
@@ -160,7 +162,6 @@ def main():
         logging.info(f"Removing existing ACPP cache at {acpp_cache}")
         shutil.rmtree(acpp_cache)
 
-    # --- Create a lookup map for GROMACS variants for efficient access ---
     gromacs_variants_map = {v['name']: v for v in config.get('gromacs_variants', [])}
 
     logging.info(f"Will run the following specified variants: {variants_to_run}")
@@ -199,7 +200,8 @@ def main():
                     level_str = ""
 
                 # --- Construct Paths for this Run ---
-                build_dir = Path("/") / gmx_variant['directory'] / "build"
+                prefix = Path(bench_params.get('path_prefix', '/'))
+                build_dir = prefix / gmx_variant['directory'] / "build"
                 gmx_executable = build_dir / "bin" / "gmx"
                 benchmark_out_dir_name = f"{gmx_variant['name']}{level_str}"
                 benchmark_out_path = benchmark_out_root / benchmark_out_dir_name
@@ -226,7 +228,6 @@ def main():
                             logging.warning(f"      TPR file not found, skipping: {tpr_file}")
                             continue
 
-                        # --- Determine PME FFT setting based on the variant's config ---
                         pmefft_setting = "gpu" if gmx_variant.get('run_fft') else "cpu"
 
                         # --- Convergence Loop ---
@@ -242,8 +243,8 @@ def main():
                                 "-update", "gpu", "-pme", pme, "-pmefft", pmefft_setting, "-ntmpi", "1", 
                                 "-ntomp", str(ncpu), "-s", str(tpr_file)
                             ]
-                            # Use the calculated time control arguments for the convergence run
                             cmd_conv.extend(time_control_args.split())
+                            cmd_conv = run_prefix_command + cmd_conv
                             
                             run_gmx_command(cmd_conv, cwd=benchmark_out_path_water, env=run_env, outfile=outfile_conv, log_file=outfile_conv)
                             
@@ -263,11 +264,10 @@ def main():
                             logging.info(f"      Running final profiled benchmark...")
                             outfile_final = benchmark_out_path_water / f"out_final_iter_{i}.log"
                             base_cmd = [
-                                str(gmx_executable), "mdrun", "-notunepme", "-noconfout", "-nb", "gpu", 
+                                str(gmx_executable), "mdrun", "-nsteps", "400", "-notunepme", "-noconfout", "-nb", "gpu", 
                                 "-bonded", "gpu", "-update", "gpu", "-pme", pme, "-pmefft", pmefft_setting, 
                                 "-ntmpi", "1", "-ntomp", str(ncpu), "-s", str(tpr_file)
                             ]
-                            base_cmd.extend(time_control_args.split())
                             
                             prof_env = run_env.copy()
                             if args.profile_serialize:
