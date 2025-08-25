@@ -12,6 +12,7 @@
       "cacheVariables": {
         "CMAKE_C_COMPILER": "hipcc",
         "CMAKE_CXX_COMPILER": "hipcc",
+        "GMX_GPU_FFT_LIBRARY": "VkFFT",
         "CMAKE_PREFIX_PATH": "/rocPRIM/build/install/lib/cmake/rocprim/;/opt/rocm/lib/cmake/",
         "GMX_GPU": "HIP"
       }

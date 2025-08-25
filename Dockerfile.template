@@ -187,10 +187,10 @@ RUN cmake --install ${GMX_DIR}/build
 {% endfor%}
 
 # =========================================================================
-# Install HIP
+# Install HIP ROCPRIM
 # =========================================================================
 
-FROM base as hip
+FROM base as rocprim
 
 # Install rocprim
 ADD https://github.com/ROCm/rocPRIM.git rocPRIM
@@ -201,6 +201,9 @@ RUN cmake -S /rocPRIM/ -B /rocPRIM/build \
     cmake --build /rocPRIM/build -j ${NINJA_NUM_PROC} && \
     cmake --install /rocPRIM/build --prefix=/rocPRIM/build/install/
 
+# =========================================================================
+
+FROM rocprim as hip-cdna
 ADD https://github.com/ROCm/Gromacs.git#4947-hip-feature-enablement /gromacs-hip
 
 COPY ./hip_patch /gromacs-hip/patch
@@ -218,6 +221,28 @@ RUN cmake --build /gromacs-hip/build/ -j ${NINJA_NUM_PROC} -t tests gmx
 RUN cmake --install /gromacs-hip/build 
 
 
+# =========================================================================
+# Install HIP RDNA
+# =========================================================================
+
+FROM rocprim as hip-rdna
+
+ADD https://github.com/ROCm/Gromacs.git#4947-hip-feature-enablement /gromacs-hip
+
+COPY ./hip_patch /gromacs-hip/patch
+
+WORKDIR /gromacs-hip
+RUN git apply patch 
+WORKDIR /
+
+COPY ./gmx.presets.json /gromacs-hip/gmx.presets.json
+COPY ./hip.gmx.preset.json /gromacs-hip/CMakeUserPresets.json
+COPY ./presets/gmx/base/gmx-base-release.json /gromacs-hip/gmx-base-release.json
+
+RUN cmake -S /gromacs-hip/ -B /gromacs-hip/build --preset hip-rdna 
+RUN cmake --build /gromacs-hip/build/ -j ${NINJA_NUM_PROC} -t tests gmx 
+RUN cmake --install /gromacs-hip/build 
+
 
 # =========================================================================
 # 7. FINAL STAGE
@@ -233,7 +258,9 @@ COPY --from=acpp-{{ variant.name }} /{{ variant.directory }}/build/ /{{ variant.
 COPY --from=gromacs-{{ variant.name }} /{{ variant.directory }}/build/ /{{ variant.directory }}/build/
 {% endfor %}
 
-COPY --from=hip /gromacs-hip/build/ /gromacs-hip/build/
+COPY --from=rocprim /rocPRIM/build/      /rocPRIM/build/
+COPY --from=hip-cdna /gromacs-hip/build/ /gromacs-hip-cdna/build/
+COPY --from=hip-rdna /gromacs-hip/build/ /gromacs-hip-rdna/build/
 
 COPY --chmod=755 common/start.sh /
 COPY --chmod=755 common/post_start.sh /
@@ -243,4 +270,4 @@ COPY versions.toml /versions.toml
 COPY Dockerfile /Dockerfile
 COPY run_benchmarks.py /run_benchmarks.py
 
-RUN apt install python3-toml -y
+RUN apt install python3-toml numactl strace proxychains-ng -y
