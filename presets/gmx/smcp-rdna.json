@@ -7,7 +7,7 @@
       "name": "smcp-rdna",
       "inherits": "smcp-base",
       "cacheVariables": {
-        "ACPP_TARGETS": "hip:gfx1201,gfx1030,gfx1100"
+        "ACPP_TARGETS": "hip:gfx1201,gfx1030,gfx1100,gfx1151"
       }
     }
   ]
