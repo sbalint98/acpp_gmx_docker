@@ -19,17 +19,17 @@ directory = "acpp-smcp-builtins-wgscope"
 branch = "bsoproni-all-gmx-builtins-barrier-wgscope"
 cmake_preset = "smcp"
 
-[[acpp_variants]]
-name = "v25020"
-directory = "acpp-smcp-v2502"
-branch = "v25.02.0"
-cmake_preset = "smcp"
+# [[acpp_variants]]
+# name = "v25020"
+# directory = "acpp-smcp-v2502"
+# branch = "v25.02.0"
+# cmake_preset = "smcp"
 
-[[acpp_variants]]
-name = "acpp-thesis-base"
-directory = "acpp-thesis-base"
-branch = "bsoproni-thesis-benchmark-base"
-cmake_preset = "smcp"
+# [[acpp_variants]]
+# name = "acpp-thesis-base"
+# directory = "acpp-thesis-base"
+# branch = "bsoproni-thesis-benchmark-base"
+# cmake_preset = "smcp"
 
 # SSCP variants
 [[gromacs_variants]]
@@ -48,70 +48,70 @@ cmake_preset = "sscp-rdna-fft"
 acpp_variant = "sscp-builtins-wgscope"
 adaptive = true
 
-[[gromacs_variants]]
-name = "sscp-builtins-all-arch-cdna"
-branch = "enable-sscp-builtins-all-arch"
-directory = "gromacs-sscp-all-arch-cdna"
-cmake_preset = "sscp-cdna"
-acpp_variant = "sscp-builtins-wgscope"
-adaptive = true
+# [[gromacs_variants]]
+# name = "sscp-builtins-all-arch-cdna"
+# branch = "enable-sscp-builtins-all-arch"
+# directory = "gromacs-sscp-all-arch-cdna"
+# cmake_preset = "sscp-cdna"
+# acpp_variant = "sscp-builtins-wgscope"
+# adaptive = true
 
-[[gromacs_variants]]
-name = "sscp-builtins-cdna"
-branch = "enable-sscp-builtins-benchmark"
-directory = "gromacs-sscp-builtins-cdna"
-cmake_preset = "sscp-cdna"
-acpp_variant = "sscp-builtins-wgscope"
-adaptive = true
+# [[gromacs_variants]]
+# name = "sscp-builtins-cdna"
+# branch = "enable-sscp-builtins-benchmark"
+# directory = "gromacs-sscp-builtins-cdna"
+# cmake_preset = "sscp-cdna"
+# acpp_variant = "sscp-builtins-wgscope"
+# adaptive = true
 
-[[gromacs_variants]]
-name = "sscp-base"
-branch = "sb-rel25-sscp-enable-upstream-benchmark"
-directory = "gromacs-sscp-cdna"
-cmake_preset = "sscp-cdna"
-acpp_variant = "sscp-builtins-wgscope"
-adaptive = true
+# [[gromacs_variants]]
+# name = "sscp-base"
+# branch = "sb-rel25-sscp-enable-upstream-benchmark"
+# directory = "gromacs-sscp-cdna"
+# cmake_preset = "sscp-cdna"
+# acpp_variant = "sscp-builtins-wgscope"
+# adaptive = true
 
 ## SMCP variants
-[[gromacs_variants]]
-name = "smcp-base-cdna"
-branch = "sb-rel25-sscp-enable-upstream-benchmark"
-directory = "gromacs-smcp-cdna"
-cmake_preset = "smcp-cdna"
-acpp_variant = "v25020"
-adaptive = false
+# [[gromacs_variants]]
+# name = "smcp-base-cdna"
+# branch = "sb-rel25-sscp-enable-upstream-benchmark"
+# directory = "gromacs-smcp-cdna"
+# cmake_preset = "smcp-cdna"
+# acpp_variant = "v25020"
+# adaptive = false
 
-[[gromacs_variants]]
-name = "smcp-base-thesis-cdna"
-branch = "sb-rel25-sscp-enable-upstream-benchmark"
-directory = "gromacs-thesis-base-cdna"
-cmake_preset = "smcp-cdna"
-acpp_variant = "acpp-thesis-base"
-adaptive = false
+# [[gromacs_variants]]
+# name = "smcp-base-thesis-cdna"
+# branch = "sb-rel25-sscp-enable-upstream-benchmark"
+# directory = "gromacs-thesis-base-cdna"
+# cmake_preset = "smcp-cdna"
+# acpp_variant = "acpp-thesis-base"
+# adaptive = false
 
-[[gromacs_variants]]
-name = "smcp-acpp-base-gmx-allarch-cdna"
-branch = "enable-sscp-builtins-all-arch"
-directory = "gromacs-smcp-acpp-base-gmx-allarch-cdna"
-cmake_preset = "smcp-cdna"
-acpp_variant = "v25020"
-adaptive = false
+# [[gromacs_variants]]
+# name = "smcp-acpp-base-gmx-allarch-cdna"
+# branch = "enable-sscp-builtins-all-arch"
+# directory = "gromacs-smcp-acpp-base-gmx-allarch-cdna"
+# cmake_preset = "smcp-cdna"
+# acpp_variant = "v25020"
+# adaptive = false
 
-[[gromacs_variants]]
-name = "smcp-acpp-base-gmx-final-cdna"
-branch = "enable-sscp-builtins-all-arch-rdna-fft"
-directory = "gromacs-smcp-acpp-base-gmx-final-cdna"
-cmake_preset = "smcp-cdna"
-acpp_variant = "v25020"
-adaptive = false  
+# [[gromacs_variants]]
+# name = "smcp-acpp-base-gmx-final-cdna"
+# branch = "enable-sscp-builtins-all-arch-rdna-fft"
+# directory = "gromacs-smcp-acpp-base-gmx-final-cdna"
+# cmake_preset = "smcp-cdna"
+# acpp_variant = "v25020"
+# adaptive = false  
 
-[[gromacs_variants]]
-name = "smcp-allarch-cdna"
-branch = "enable-sscp-builtins-all-arch"
-directory = "gromacs-smcp-allarch-cdna"
-cmake_preset = "smcp-cdna"
-acpp_variant = "smcp-builtins-wgscope"
-adaptive = false
+# [[gromacs_variants]]
+# name = "smcp-allarch-cdna"
+# branch = "enable-sscp-builtins-all-arch"
+# directory = "gromacs-smcp-allarch-cdna"
+# cmake_preset = "smcp-cdna"
+# acpp_variant = "smcp-builtins-wgscope"
+# adaptive = false
 
 [[gromacs_variants]]
 name = "smcp-final-cdna"
@@ -137,7 +137,7 @@ directory = "gromacs-hip-cdna"
 hip = true
 
 [[gromacs_variants]]
-name = "hip-cdna"
+name = "hip-rdna"
 branch = "4947-hip-feature-enablement"
 directory = "gromacs-hip-rdna"
 hip = true
