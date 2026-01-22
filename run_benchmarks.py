@@ -244,7 +244,8 @@ def main():
                                 "-ntomp", str(ncpu), "-s", str(tpr_file)
                             ]
                             cmd_conv.extend(time_control_args.split())
-                            cmd_conv = run_prefix_command + cmd_conv
+                            if run_prefix_command != ['']:
+                                cmd_conv = run_prefix_command + cmd_conv
                             
                             run_gmx_command(cmd_conv, cwd=benchmark_out_path_water, env=run_env, outfile=outfile_conv, log_file=outfile_conv)
                             
@@ -280,3 +281,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

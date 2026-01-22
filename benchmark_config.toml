@@ -12,7 +12,7 @@ water_boxes = [
     "0001.5", "0003", "0006", "0012", "0024", "0048", 
     "0096", "0192", "0384", "0768", "1536", "3072"
 ]
-water_box_source_dir = "grappa-1.5k-6.1M_rc0.9"
+water_box_source_dir = "/grappa-1.5k-6.1M_rc0.9"
 adaptivity_levels_to_check = [1]
 
 
