@@ -28,7 +28,7 @@
       "name": "hip-rdna",
       "inherits": "hip-gmx",
       "cacheVariables": {
-        "GMX_HIP_TARGET_ARCH": "hip:gfx1201,gfx1030,gfx1100"
+        "GMX_HIP_TARGET_ARCH": "gfx1201,gfx1030,gfx1100"
       }
     }
   ]

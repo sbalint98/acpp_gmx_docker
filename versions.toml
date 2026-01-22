@@ -137,7 +137,16 @@ directory = "gromacs-hip-cdna"
 hip = true
 
 [[gromacs_variants]]
-name = "hip-cdna"
+name = "hip-rdna"
 branch = "4947-hip-feature-enablement"
 directory = "gromacs-hip-rdna"
 hip = true
+
+# These have to be at the end unfortunately since otherise the docker cache gets messed up
+[[gromacs_variants]]
+name = "smcp-base-thesis-rdna"
+branch = "sb-rel25-sscp-enable-upstream-benchmark"
+directory = "gromacs-thesis-base-rdna"
+cmake_preset = "smcp-rdna"
+acpp_variant = "acpp-thesis-base"
+adaptive = false
