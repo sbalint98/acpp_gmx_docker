@@ -251,11 +251,11 @@ RUN cmake --install /gromacs-hip/build
 FROM base AS final
 # Copy the built AdaptiveCpp and GROMACS artifacts from the respective builder stages.
 {% for variant in acpp_variants %}
-COPY --from=acpp-{{ variant.name }} /{{ variant.directory }}/build/ /{{ variant.directory }}/build/
+COPY --from=acpp-{{ variant.name }} /{{ variant.directory }}/ /{{ variant.directory }}/
 {% endfor %}
 
 {% for variant in gromacs_variants %}
-COPY --from=gromacs-{{ variant.name }} /{{ variant.directory }}/build/ /{{ variant.directory }}/build/
+COPY --from=gromacs-{{ variant.name }} /{{ variant.directory }}/ /{{ variant.directory }}/
 {% endfor %}
 
 COPY --from=rocprim /rocPRIM/build/      /rocPRIM/build/
