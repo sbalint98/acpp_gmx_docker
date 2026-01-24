@@ -23,17 +23,17 @@ cmake_preset = "smcp"
 
 # SSCP variants
 [[gromacs_variants]]
-name = "gromacs-final-cdna-fft"
-branch = "bs-upstream-sscp-v2026.0"
-directory = "gromacs-sscp-final-cdna"
+name = "gromacs-sscp-cdna"
+branch = "thesis-sscp-v2025.2"
+directory = "gromacs-sscp-cdna"
 cmake_preset = "sscp-cdna-fft"
 acpp_variant = "sscp-builtins-wgscope"
 adaptive = true
 
 [[gromacs_variants]]
-name = "gromacs-final-rdna-fft"
-branch = "bs-upstream-sscp-v2026.0"
-directory = "gromacs-sscp-final-rdna"
+name = "gromacs-sscp-rdna"
+branch = "thesis-sscp-v2025.2"
+directory = "gromacs-sscp-rdna"
 cmake_preset = "sscp-rdna-fft"
 acpp_variant = "sscp-builtins-wgscope"
 adaptive = true
@@ -41,16 +41,16 @@ adaptive = true
 # SMCP Base
 
 [[gromacs_variants]]
-name = "smcp-final-cdna"
-branch = "v2026.0"
+name = "smcp-v2025.2-cdna"
+branch = "v2025.2"
 directory = "gromacs-smcp-final-cdna"
 cmake_preset = "smcp-cdna"
 acpp_variant = "smcp-builtins-wgscope"
 adaptive = false
 
 [[gromacs_variants]]
-name = "smcp-final-rdna"
-branch = "v2026.0"
+name = "smcp-v2025.2-rdna"
+branch = "v2025.2"
 directory = "gromacs-smcp-final-rdna"
 cmake_preset = "smcp-rdna"
 acpp_variant = "smcp-builtins-wgscope"
@@ -60,7 +60,7 @@ adaptive = false
 # SMCP Refactored
 [[gromacs_variants]]
 name = "gromacs-refactored-smcp-cdna"
-branch = "bs-upstream-sscp-v2026.0"
+branch = "thesis-sscp-v2025.2"
 directory = "gromacs-refactored-smcp-cdna"
 cmake_preset = "smcp-cdna"
 acpp_variant = "sscp-builtins-wgscope"
