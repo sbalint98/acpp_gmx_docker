@@ -4,7 +4,8 @@ acpp = [
   { name = "fork", url = "https://github.com/sbalint98/AdaptiveCpp.git" }
 ]
 gromacs = [
-  { name = "official", url = "https://gitlab.com/sbalint98/gromacs.git" }
+  { name = "fork", url = "https://gitlab.com/sbalint98/gromacs.git" },
+  { name = "official", url = "https://gitlab.com/gromacs/gromacs.git" }
 ]
 
 [[acpp_variants]]
@@ -54,6 +55,17 @@ directory = "gromacs-smcp-final-rdna"
 cmake_preset = "smcp-rdna"
 acpp_variant = "smcp-builtins-wgscope"
 adaptive = false
+
+
+# SMCP Refactored
+[[gromacs_variants]]
+name = "gromacs-refactored-smcp-cdna"
+branch = "bs-upstream-sscp-v2026.0"
+directory = "gromacs-refactored-smcp-cdna"
+cmake_preset = "smcp-cdna"
+acpp_variant = "sscp-builtins-wgscope"
+adaptive = false
+
 
 ## HIP variants
 #[[gromacs_variants]]
