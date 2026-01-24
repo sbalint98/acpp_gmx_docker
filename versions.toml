@@ -60,16 +60,16 @@ adaptive = true
 # SMCP Base
 
 [[gromacs_variants]]
-name = "smcp-v2025.2-cdna"
-branch = "v2025.2"
+name = "smcp-v2025.4-cdna"
+branch = "v2025.4"
 directory = "gromacs-smcp-final-cdna"
 cmake_preset = "smcp-cdna"
 acpp_variant = "smcp-v2025.10"
 adaptive = false
 
 [[gromacs_variants]]
-name = "smcp-v2025.2-rdna"
-branch = "v2025.2"
+name = "smcp-v2025.4-rdna"
+branch = "v2025.4"
 directory = "gromacs-smcp-final-rdna"
 cmake_preset = "smcp-rdna"
 acpp_variant = "smcp-v2025.10"
