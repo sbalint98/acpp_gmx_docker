@@ -63,7 +63,7 @@ name = "gromacs-refactored-smcp-cdna"
 branch = "thesis-sscp-v2025.2"
 directory = "gromacs-refactored-smcp-cdna"
 cmake_preset = "smcp-cdna"
-acpp_variant = "sscp-builtins-wgscope"
+acpp_variant =  "smcp-builtins-wgscope"
 adaptive = false
 
 
