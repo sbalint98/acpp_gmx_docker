@@ -8,23 +8,6 @@ gromacs = [
   { name = "official", url = "https://gitlab.com/gromacs/gromacs.git" }
 ]
 
-[[acpp_variants]]
-name = "sscp-builtins-wgscope"
-directory = "acpp-sscp-builtins-wgscope"
-branch = "bsoproni-all-gmx-builtins-barrier-wgscope"
-cmake_preset = "sscp"
-
-[[acpp_variants]]
-name = "sscp-builtins-wgscope-separate-adaptivity"
-directory = "acpp-sscp-builtins-wgscope-sep-adaptivity"
-branch= "bsoproni-all-gmx-builtins-barrier-wgscope-separate-adaptivity"
-cmake_preset = "sscp"
-
-[[acpp_variants]]
-name = "smcp-builtins-wgscope"
-directory = "acpp-smcp-builtins-wgscope"
-branch = "bsoproni-all-gmx-builtins-barrier-wgscope"
-cmake_preset = "smcp"
 
 [[acpp_variants]]
 name = "smcp-v2025.10"
@@ -32,69 +15,22 @@ directory = "acpp-v25.10"
 branch= "v25.10.0-patch"
 cmake_preset= "smcp"
 
-# SSCP variants
-[[gromacs_variants]]
-name = "gromacs-sscp-cdna"
-branch = "thesis-sscp-v2025.4"
-directory = "gromacs-sscp-cdna"
-cmake_preset = "sscp-cdna-fft"
-acpp_variant = "sscp-builtins-wgscope"
-adaptive = true
-
-[[gromacs_variants]]
-name = "gromacs-sscp-cdna-sep-adap"
-branch = "thesis-sscp-v2025.4"
-directory = "gromacs-sscp-cdna-sep-adap"
-cmake_preset = "sscp-cdna-fft"
-acpp_variant = "sscp-builtins-wgscope-separate-adaptivity"
-adaptive = true
-
-[[gromacs_variants]]
-name = "gromacs-sscp-rdna"
-branch = "thesis-sscp-v2025.4"
-directory = "gromacs-sscp-rdna"
-cmake_preset = "sscp-rdna-fft"
-acpp_variant = "sscp-builtins-wgscope"
-adaptive = true
 
 # SMCP Base
 
 [[gromacs_variants]]
-name = "smcp-v2025.4-cdna"
-branch = "v2025.4"
-directory = "gromacs-smcp-final-cdna"
+name = "smcp-main-cdna"
+branch = "main"
+directory = "gromacs-smcp-main"
 cmake_preset = "smcp-cdna"
 acpp_variant = "smcp-v2025.10"
 adaptive = false
 
 [[gromacs_variants]]
-name = "smcp-v2025.4-rdna"
-branch = "v2025.4"
-directory = "gromacs-smcp-final-rdna"
-cmake_preset = "smcp-rdna"
+name = "smcp-refactor-cdna"
+branch = "bs-upstream-only-nbnxm-refactor"
+directory = "gromacs-smcp-refactor"
+cmake_preset = "smcp-cdna"
 acpp_variant = "smcp-v2025.10"
 adaptive = false
 
-
-# SMCP Refactored
-[[gromacs_variants]]
-name = "gromacs-refactored-smcp-cdna"
-branch = "thesis-sscp-v2025.4"
-directory = "gromacs-refactored-smcp-cdna"
-cmake_preset = "smcp-cdna"
-acpp_variant =  "smcp-builtins-wgscope"
-adaptive = false
-
-
-## HIP variants
-#[[gromacs_variants]]
-#name = "hip-cdna"
-#branch = "4947-hip-feature-enablement"
-#directory = "gromacs-hip-cdna"
-#hip = true
-#
-#[[gromacs_variants]]
-#name = "hip-rdna"
-#branch = "4947-hip-feature-enablement"
-#directory = "gromacs-hip-rdna"
-#hip = true
